@@ -358,7 +358,7 @@ public class Encoder {
 				for (BooleanVariable v : csp.getBooleanVariables()) {
 					v.decode(satValues);
 				}
-			} else if (st.sval.equals("UNSAT")) {
+			} else if (st.sval.startsWith("UNSAT")) {
 				sat = false;
 			} else {
 				throw new SugarException("Unknown Encoder output " + st.sval);

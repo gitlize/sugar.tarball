@@ -37,7 +37,7 @@ sub write_csp {
 	    print "(int $x 1 $n2)\n";
 	}
     }
-    print "(allDifferent ", join(" ", @_), ")\n";
+    print "(alldifferent ", join(" ", @_), ")\n";
     foreach my $i (1 .. $n) {
 	foreach my $j (1 .. $n) {
 	    my $x = "x_${i}_${j}";

@@ -9,7 +9,7 @@
 (int R 0 9)
 (int S 1 9)
 (int V 0 9)
-(allDifferent A C E J L M O R S V)
+(alldifferent A C E J L M O R S V)
 (int C1 0 1)
 (= (+ A M) (+ (* 10 C1) R))
 (int C2 0 1)

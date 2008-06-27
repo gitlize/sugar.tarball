@@ -1,6 +1,5 @@
 ================================================================
-README for Sugar
-2008/05/20
+README for Sugar version 1.13
 
 Sugar: A SAT-based Constraint Solver
 
@@ -43,7 +42,7 @@ INSTALLATION
   execution environment.
 
   - $java   : Java command path
-  - $jar    : Full path of the sugar-v1-12.jar file in the same directory
+  - $jar    : Full path of the sugar-v1-13.jar file in the same directory
   - $solver : Path of the SAT solver (e.g. MiniSat)
   - $tmp    : Path prefix for temporally created files
 
@@ -56,6 +55,8 @@ Optimization Problems) can be solved by Sugar.
   $ sugar examples/nqueens-8.csp
 
   $ sugar examples/golombRuler-8.csp
+
+See docs/syntax.html for the syntax of Sugar CSP description.
 
 Sugar can also solve CSPs and MAX-CSPs written in XCSP 2.1 format for
 the 2008 CSP solver competition (see http://cpai.ucc.ie/08/).
@@ -80,11 +81,11 @@ way.
 
 * XCSP to CSP conversion
 
-  $ java -cp sugar-v1-12.jar jp.ac.kobe_u.cs.sugar.XML2CSP file.xml file.csp
+  $ java -cp sugar-v1-13.jar jp.ac.kobe_u.cs.sugar.XML2CSP file.xml file.csp
 
 * Encoding CSP to SAT
 
-  $ java -jar sugar-v1-12.jar -encode file.csp file.cnf file.map
+  $ java -jar sugar-v1-13.jar -encode file.csp file.cnf file.map
 
 * Solving SAT
 
@@ -92,7 +93,7 @@ way.
 
 * Decoding SAT output
 
-  $ java -jar sugar-v1-12.jar [-competition] -decode file.out file.map
+  $ java -jar sugar-v1-13.jar [-competition] -decode file.out file.map
 
 ================
 LIMITATIONS AND KNOWN BUGS
@@ -100,13 +101,13 @@ LIMITATIONS AND KNOWN BUGS
 * Multiplications (also divisions and remainders) for two integer
   variables can not be encoded.
 
+* Power functions are not supported.
+
 * CSPs with large domains (e.g. 10,000) will be encoded into very large
   SAT files, and might not be solved by a SAT solver.
        The size of generated SAT file is proportional to the square of
   the domain size in most of the cases.  A very large SAT file (e.g. 
   1GB) might not be solved by most of the SAT solvers.
-
-* Maximization problems are not supported yet.
 
 ================
 PUBLICATIONS
@@ -133,7 +134,7 @@ See LICENSE file for more details.
 ================
 CONTACTS
 
-Naoyuki Tamura and Mutsunori Banbara
+Naoyuki Tamura, Tomoya Tanjo, and Mutsunori Banbara
 Information Science and Technology Center, Kobe University
 1-1 Rokkodai, Nada, Kobe 657-8501 Japan
 E-mail: tamura @ kobe-u.ac.jp, banbara @ kobe-u.ac.jp

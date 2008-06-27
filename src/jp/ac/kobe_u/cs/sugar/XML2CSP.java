@@ -182,7 +182,7 @@ public class XML2CSP {
 			Element parameters = getFirstElement(constraintElement, PARAMETERS);
 			String params = "";
 			if (reference.startsWith("global:")) {
-				reference = reference.replaceFirst("global:", "");
+				reference = reference.replaceFirst("global:", "").toLowerCase();
 				if (parameters == null) {
 					params = scope;
 				} else {

@@ -36,17 +36,17 @@ sub write_csp {
 	my $q = "q_${i}";
 	push(@_, $q);
     }
-    print "(allDifferent ", join(" ", @_), ")\n";
+    print "(alldifferent ", join(" ", @_), ")\n";
     @_ = ();
     foreach my $i (1 .. $n) {
 	my $q = "q_${i}";
 	push(@_, "(+ $q $i)");
     }
-    print "(allDifferent ", join(" ", @_), ")\n";
+    print "(alldifferent ", join(" ", @_), ")\n";
     @_ = ();
     foreach my $i (1 .. $n) {
 	my $q = "q_${i}";
 	push(@_, "(- $q $i)");
     }
-    print "(allDifferent ", join(" ", @_), ")\n";
+    print "(alldifferent ", join(" ", @_), ")\n";
 }

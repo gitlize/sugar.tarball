@@ -1,5 +1,5 @@
-VER = v1-12
-VERSION = 1.12
+VER = v1-13
+VERSION = 1.13
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -22,9 +22,9 @@ JAVADOC  = javadoc -locale en_US \
 	-classpath ../classes -sourcepath ../src -subpackages $(PACKAGE) \
 	-public -d ../docs/api
 
-all: zip
+all: zip jar javadoc
 
-zip: jar javadoc
+zip:
 	rm -f $(ZIP)
 	rm -rf $(APP)
 	mkdir $(APP)

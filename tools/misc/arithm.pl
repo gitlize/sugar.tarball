@@ -52,7 +52,7 @@ sub write_csp {
 	my $max = $base - 1;
 	print "(int $c $min $max)\n";
     }
-    print "(allDifferent ", join(" ", @chars), ")\n";
+    print "(alldifferent ", join(" ", @chars), ")\n";
     my $c = 0;
     my $maxcarry = 0;
     my $sum = pop(@words);

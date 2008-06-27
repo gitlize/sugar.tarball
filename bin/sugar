@@ -3,16 +3,17 @@ use Getopt::Long;
 use strict;
 $| = 1;
 
+my $version = "v1-13";
 my $java = "java";
-my $jar = "/usr/local/lib/sugar/sugar-v1-12.jar";
+my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
 my $solver = "minisat";
 my $tmp = "/tmp/sugar$$";
 
-my ($version, $help, $debug, $verbose, $veryverbose);
+my ($showversion, $help, $debug, $verbose, $veryverbose);
 my ($competition, $keep, $incremental, $prof);
 my ($max_csp, $csp_file, $map_file, $sat_file, $out_file);
 &GetOptions(
-	    'version' => \$version,
+	    'version' => \$showversion,
 	    'h|help' => \$help,
 	    'debug' => \$debug,
 	    'v|verbose' => \$verbose,
@@ -33,8 +34,8 @@ my ($max_csp, $csp_file, $map_file, $sat_file, $out_file);
 	    );
 $verbose = $verbose || $veryverbose;
 
-if ($version) {
-    print "$0 version 1.11\n";
+if ($showversion) {
+    print "Sugar $version + $solver\n";
     exit(1);
 }
 if (@ARGV != 1 || $help) {
@@ -52,8 +53,6 @@ my ($objective, $objective_var, $objective_code, @objective_values);
 my $time0 = time;
 
 $ENV{'LANG'} = "C";
-$SIG{'INT'} = \&handler;
-$SIG{'TERM'} = \&handler;
 setpgrp($$, $$);
 
 &main();
@@ -147,11 +146,11 @@ sub handler {
     $SIG{'TERM'} = 'IGNORE';
     kill(-2, $$);
     # kill(-15, $$);
-    # $SIG{'INT'} = 'DEFAULT';
-    # $SIG{'TERM'} = 'DEFAULT';
+    $SIG{'INT'} = 'DEFAULT';
+    $SIG{'TERM'} = 'DEFAULT';
     if ($pid) {
-	kill(2,$pid);
-	# kill(15,$pid);
+	kill(2, $pid);
+	# kill(15, $pid);
 	while (<CMD>) {
 	    chomp;
 	    if ($verbose) {
@@ -187,8 +186,11 @@ sub main {
     unlink $csp_file if $xml_file;
     unlink $map_file, $sat_file, $out_file;
 
+    $SIG{'INT'} = \&handler;
+    $SIG{'TERM'} = \&handler;
     eval {
 	$result = "";
+	&log("Sugar $version + $solver");
 	&log("BEGIN", scalar(localtime));
 	&log("PID", $$);
 	chomp($_ = `hostname`);
@@ -205,10 +207,13 @@ sub main {
 	    &error("$csp_file not found");
 	}
     };
+    $SIG{'INT'} = \&handler;
+    $SIG{'TERM'} = \&handler;
     eval {
 	if (! $result) {
 	    &print("s UNKNOWN");
 	}
+	wait;
 	my @t = times;
 	my $cpu = $t[0] + $t[2];
 	$_ = "(" . join(" ", @t) . ")";
@@ -266,7 +271,11 @@ sub solve {
 	    &minimize($sat_file, $out_file, $map_file);
 	}
     } elsif ($objective eq "maximize") {
-	die;
+	if ($incremental) {
+	    &maximize_inc($sat_file, $out_file, $map_file);
+	} else {
+	    &maximize($sat_file, $out_file, $map_file);
+	}
     } else {
 	&find($sat_file, $out_file, $map_file);
     }
@@ -335,9 +344,9 @@ sub minimize {
 	open(SAT, "+<", $sat_file) || die;
 	seek(SAT, $sat_size, 0);
 	if ($i < @objective_values - 1) {
-	    print SAT "$code 0\n";
+	    print SAT "$code 0\n         ";
 	} else {
-	    print SAT "                   \n";
+	    print SAT "1 -1 0\n          ";
 	}
 	close(SAT);
 	&log("OBJECTIVE BOUND:",
@@ -363,6 +372,65 @@ sub minimize {
 	} elsif (/^(s\s+)?UNSAT/) {
 	    &log("NOT FOUND: $objective_var <= $value");
 	    $i0 = $i + 1;
+	} else {
+	    &error("unknown output $_ in $out_file");
+	    return;
+	}
+    }
+    if ($found) {
+	&log("OBJECTIVE $objective_var $objective_value");
+	&print("s OPTIMUM FOUND");
+    } else {
+	&print("s UNSATISFIABLE");
+    }
+}
+
+sub maximize_inc {
+    my ($sat_file, $out_file, $map_file) = @_;
+    die;
+}
+
+sub maximize {
+    my ($sat_file, $out_file, $map_file) = @_;
+    my $sat_size = (stat($sat_file))[7];
+    my $found = 0;
+    my $i0 = -1;
+    my $i1 = scalar(@objective_values) - 1;
+    while ($i0 < $i1) {
+	my $i = int(($i0+$i1) / 2);
+	my $value = $objective_values[$i];
+	my $code = $objective_code + $i;
+	open(SAT, "+<", $sat_file) || die;
+	seek(SAT, $sat_size, 0);
+	if ($i >= 0) {
+	    print SAT "-$code 0\n         ";
+	} else {
+	    print SAT "1 -1 0\n           ";
+	}
+	close(SAT);
+	&log("OBJECTIVE BOUND:",
+	     $objective_values[$i0], "<=", $objective_var,
+	     "<=", $objective_values[$i1]);
+	&log("SEARCHING: $objective_var > $value");
+	&sat($sat_file, $out_file);
+	open(IN, "<$out_file") || die;
+	chomp($_ = <IN>);
+	close(IN);
+	if (/^(s\s+)?SAT/) {
+	    &log("FOUND: $objective_var > $value");
+	    if (! $found) {
+		&print("s SATISFIABLE");
+	    }
+	    $found = 1;
+	    $i0 = $i;
+	    &decode($out_file, $map_file);
+	    while ($i0 < @objective_values && $objective_value > $value) {
+		$i0++;
+		$value = $objective_values[$i0];
+	    }
+	} elsif (/^(s\s+)?UNSAT/) {
+	    &log("NOT FOUND: $objective_var > $value");
+	    $i1 = $i;
 	} else {
 	    &error("unknown output $_ in $out_file");
 	    return;

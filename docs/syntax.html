@@ -7,7 +7,7 @@
 <body>
 <center>
 <h1>Syntax of Sugar CSP description</h1>
-<!-- hhmts start -->Last modified: Sun May 25 01:43:50 2008 JST
+<!-- hhmts start -->Last modified: Mon Jun 23 22:49:32 2008 JST
 <!-- hhmts end -->
 </center>
 <hr>
@@ -241,7 +241,8 @@ This document explains the syntax of CSP
 <h3>Syntax</h3>
 <pre class="definition">
 <i>AllDifferentConstraint</i> ::=
-    <tt>(allDifferent</tt> <i>Term</i>*<tt>)</tt>
+    <tt>(alldifferent</tt> <i>Term</i>*<tt>)</tt> |
+    <tt>(alldifferent</tt> (<i>Term</i>*<tt>))</tt>
 </pre>
 
 <h3>Remarks</h3>
@@ -253,7 +254,8 @@ This document explains the syntax of CSP
 
 <h3>Examples</h3>
 <pre class="program">
-(allDifferent (+ x1 1) (+ x2 2) (+ x3 3) (+ x4 4))
+(alldifferent (+ x1 1) (+ x2 2) (+ x3 3) (+ x4 4))
+(alldifferent ((+ x1 1) (+ x2 2) (+ x3 3) (+ x4 4)))
 </pre>
 
 <!-- ================================================================ -->
@@ -261,7 +263,7 @@ This document explains the syntax of CSP
 <h3>Syntax</h3>
 <pre class="definition">
 <i>WeightedSumConstraint</i> ::=
-    <tt>(weightedSum</tt> <tt>(</tt><i>WeightedPair</i>*<tt>)</tt> <i>ComparisonName</i> <i>Term</i><tt>)</tt>
+    <tt>(weightedsum</tt> <tt>(</tt><i>WeightedPair</i>*<tt>)</tt> <i>ComparisonName</i> <i>Term</i><tt>)</tt>
 <i>WeightedPair</i> ::=
     <tt>(</tt><i>Weight</i> <i>Term</i><tt>)</tt>
 <i>Weight</i> ::=
@@ -279,7 +281,7 @@ This document explains the syntax of CSP
 
 <h3>Examples</h3>
 <pre class="program">
-(weightedSum ((1 v0) (2 v1) (-3 v2)) gt 12)  ; means 1*v0+2*v1-3*v3 &gt; 12
+(weightedsum ((1 v0) (2 v1) (-3 v2)) gt 12)  ; means 1*v0+2*v1-3*v3 &gt; 12
 </pre>
 
 <!-- ================================================================ -->
@@ -399,7 +401,7 @@ This document explains the syntax of CSP
 (int x_3_1 1 9)
 (int x_3_2 1 9)
 (int x_3_3 1 9)
-(allDifferent x_1_1 x_1_2 x_1_3 x_2_1 x_2_2 x_2_3 x_3_1 x_3_2 x_3_3)
+(alldifferent x_1_1 x_1_2 x_1_3 x_2_1 x_2_2 x_2_3 x_3_1 x_3_2 x_3_3)
 (= (+ x_1_1 x_1_2 x_1_3) 15)
 (= (+ x_2_1 x_2_2 x_2_3) 15)
 (= (+ x_3_1 x_3_2 x_3_3) 15)
@@ -435,7 +437,7 @@ This document explains the syntax of CSP
 (= d_3_1 (- m_3 m_1))
 (int d_3_2 0 7)
 (= d_3_2 (- m_3 m_2))
-(allDifferent d_1_0 d_2_0 d_3_0 d_2_1 d_3_1 d_3_2)
+(alldifferent d_1_0 d_2_0 d_3_0 d_2_1 d_3_1 d_3_2)
 ; END
 </pre>
 
@@ -445,9 +447,9 @@ This document explains the syntax of CSP
 (int q_2 1 4)
 (int q_3 1 4)
 (int q_4 1 4)
-(allDifferent q_1 q_2 q_3 q_4)
-(allDifferent (+ q_1 1) (+ q_2 2) (+ q_3 3) (+ q_4 4))
-(allDifferent (- q_1 1) (- q_2 2) (- q_3 3) (- q_4 4))
+(alldifferent q_1 q_2 q_3 q_4)
+(alldifferent (+ q_1 1) (+ q_2 2) (+ q_3 3) (+ q_4 4))
+(alldifferent (- q_1 1) (- q_2 2) (- q_3 3) (- q_4 4))
 ; END
 </pre>
 

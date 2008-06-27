@@ -106,7 +106,7 @@ sub write_csp {
 	    }
 	}
     }
-    print "(allDifferent ", join(" ", @_), ")\n";
+    print "(alldifferent ", join(" ", @_), ")\n";
 }
 
 sub mark {

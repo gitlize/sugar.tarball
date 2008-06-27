@@ -40,8 +40,8 @@ public class SugarConstants {
 	public static final String MIN = "min";
 	public static final String MAX = "max";
 	public static final String IF = "if";
-	public static final String ALLDIFFERENT = "allDifferent";
-	public static final String WEIGHTEDSUM = "weightedSum";
+	public static final String ALLDIFFERENT = "alldifferent";
+	public static final String WEIGHTEDSUM = "weightedsum";
 	public static final String CUMULATIVE = "cumulative";
 	public static final String ELEMENT = "element";
 	public static final String NIL = "nil";

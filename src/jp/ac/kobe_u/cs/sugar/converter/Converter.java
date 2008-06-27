@@ -112,6 +112,29 @@ public class Converter {
 			name = seq.get(1).stringValue();
 			String domainName = seq.get(2).stringValue();
 			domain = domainMap.get(domainName);
+		} else if (seq.matches("WWS")) {
+			name = seq.get(1).stringValue();
+			SortedSet<Integer> d = new TreeSet<Integer>(); 
+			Sequence x = (Sequence)seq.get(2);
+			for (int i = 0; i < x.length(); i++) {
+				if (x.get(i).isInteger()) {
+					d.add(x.get(i).integerValue());
+				} else 	if (x.get(i).isSequence()) {
+					Sequence seq1 = (Sequence)x.get(i);
+					if (seq1.matches("II")) {
+						int value0 = ((Sequence)x.get(i)).get(0).integerValue();
+						int value1 = ((Sequence)x.get(i)).get(1).integerValue();
+						for (int value = value0; value <= value1; value++) {
+							d.add(value);
+						}
+					} else {
+						throw new SugarException("Bad definition " + seq);
+					}
+				} else {
+					throw new SugarException("Bad definition " + seq);
+				}
+			}
+			domain = new IntegerDomain(d);
 		} else if (seq.matches("WWII")) {
 			name = seq.get(1).stringValue();
 			int lb = seq.get(2).integerValue();
@@ -294,12 +317,24 @@ public class Converter {
 		LinearSum e2 = convertFormula(x2);
 		IntegerDomain d1 = e1.getDomain();
 		IntegerDomain d2 = e2.getDomain();
-		if (d2.size() == 1) {
-			e1.multiply(d2.getLowerBound());
-			return e1;
-		} else if (d1.size() == 1) {
+		if (d1.size() == 1) {
 			e2.multiply(d1.getLowerBound());
 			return e2;
+		} else if (d2.size() == 1) {
+			e1.multiply(d2.getLowerBound());
+			return e1;
+		} else if (d1.size() == 2) {
+			Expression a1 = Expression.create(d1.getLowerBound());
+			Expression a2 = Expression.create(d1.getUpperBound());
+			Expression x = Expression.create(Expression.IF,
+					x1.eq(a1), a1.mul(x2), a2.mul(x2));
+			return convertIF((Sequence)x);
+		} else if (d2.size() == 2) {
+			Expression a1 = Expression.create(d2.getLowerBound());
+			Expression a2 = Expression.create(d2.getUpperBound());
+			Expression x = Expression.create(Expression.IF,
+					x2.eq(a1), a1.mul(x1), a2.mul(x1));
+			return convertIF((Sequence)x);
 		}
 		// TODO mul
 		if (true) {
@@ -710,18 +745,24 @@ public class Converter {
 	}
 
 	private Expression convertAllDifferent(Sequence seq) throws SugarException {
+		int di = 1;
 		int n = seq.length() - 1;
+		if (n == 1 && seq.get(n).isSequence()) {
+			seq = (Sequence)seq.get(n);
+			n = seq.length();
+			di = 0;
+		}
 		List<Expression> xs = new ArrayList<Expression>();
 		xs.add(Expression.AND);
 		for (int i = 0; i < n; i++) {
 			for (int j = i + 1; j < n; j++) {
-				xs.add(seq.get(i+1).ne(seq.get(j+1)));
+				xs.add(seq.get(i+di).ne(seq.get(j+di)));
 			}
 		}
 		int lb = Integer.MAX_VALUE;
 		int ub = Integer.MIN_VALUE;
 		for (int i = 0; i < n; i++) {
-			IntegerDomain d = convertFormula(seq.get(i+1)).getDomain();
+			IntegerDomain d = convertFormula(seq.get(i+di)).getDomain();
 			lb = Math.min(lb, d.getLowerBound());
 			ub = Math.max(ub, d.getUpperBound());
 		}
@@ -730,8 +771,8 @@ public class Converter {
 		List<Expression> xs2 = new ArrayList<Expression>();
 		xs2.add(Expression.AND);
 		for (int i = 0; i < n; i++) {
-			xs1.add(seq.get(i+1).lt(Expression.create(lb + n - 1)));
-			xs2.add(seq.get(i+1).gt(Expression.create(ub - n + 1)));
+			xs1.add(seq.get(i+di).lt(Expression.create(lb + n - 1)));
+			xs2.add(seq.get(i+di).gt(Expression.create(ub - n + 1)));
 		}
 		Expression x = Expression.create(xs)
 		.and(Expression.create(xs1).not())
