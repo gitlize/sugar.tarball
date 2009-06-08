@@ -1,5 +1,5 @@
 ================================================================
-README for Sugar version 1.13
+README for Sugar version 1.14
 
 Sugar: A SAT-based Constraint Solver
 
@@ -42,7 +42,7 @@ INSTALLATION
   execution environment.
 
   - $java   : Java command path
-  - $jar    : Full path of the sugar-v1-13.jar file in the same directory
+  - $jar    : Full path of the sugar-v1-14.jar file in the same directory
   - $solver : Path of the SAT solver (e.g. MiniSat)
   - $tmp    : Path prefix for temporally created files
 
@@ -81,11 +81,11 @@ way.
 
 * XCSP to CSP conversion
 
-  $ java -cp sugar-v1-13.jar jp.ac.kobe_u.cs.sugar.XML2CSP file.xml file.csp
+  $ java -cp sugar-v1-14.jar jp.ac.kobe_u.cs.sugar.XML2CSP file.xml file.csp
 
 * Encoding CSP to SAT
 
-  $ java -jar sugar-v1-13.jar -encode file.csp file.cnf file.map
+  $ java -jar sugar-v1-14.jar -encode file.csp file.cnf file.map
 
 * Solving SAT
 
@@ -93,7 +93,7 @@ way.
 
 * Decoding SAT output
 
-  $ java -jar sugar-v1-13.jar [-competition] -decode file.out file.map
+  $ java -jar sugar-v1-14.jar [-competition] -decode file.out file.map
 
 ================
 LIMITATIONS AND KNOWN BUGS

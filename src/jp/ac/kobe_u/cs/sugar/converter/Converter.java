@@ -1,5 +1,6 @@
 package jp.ac.kobe_u.cs.sugar.converter;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -24,7 +25,12 @@ import jp.ac.kobe_u.cs.sugar.expression.*;
 public class Converter {
 	public static int MAX_EQUIVMAP_SIZE = 1000;
 	public static long MAX_LINEARSUM_SIZE = 1024L;
+	// public static long MAX_LINEARSUM_SIZE = 2048L;
 	public static boolean expandABS = true;
+	public static boolean OPT_PIGEON = true;
+	public static boolean INCREMENTAL_PROPAGATE = true;
+	public static boolean ESTIMATE_SATSIZE = false; // bad
+	public static int SPLITS = 2;
 	
 	private class EquivMap extends LinkedHashMap<Expression,IntegerVariable> {
 
@@ -73,6 +79,10 @@ public class Converter {
 			int lb = seq.get(2).integerValue();
 			int ub = seq.get(3).integerValue();
 			domain = new IntegerDomain(lb, ub);
+		} else if (seq.matches("WWI")) {
+			name = seq.get(1).stringValue();
+			int lb = seq.get(2).integerValue();
+			domain = new IntegerDomain(lb, lb);
 		} else if (seq.matches("WWS")) {
 			name = seq.get(1).stringValue();
 			SortedSet<Integer> d = new TreeSet<Integer>(); 
@@ -140,6 +150,10 @@ public class Converter {
 			int lb = seq.get(2).integerValue();
 			int ub = seq.get(3).integerValue();
 			domain = new IntegerDomain(lb, ub);
+		} else if (seq.matches("WWI")) {
+			name = seq.get(1).stringValue();
+			int lb = seq.get(2).integerValue();
+			domain = new IntegerDomain(lb, lb);
 		} else {
 			throw new SugarException("Bad definition " + seq);
 		}
@@ -193,7 +207,7 @@ public class Converter {
 
 	private void convertPredicateDefinition(Sequence seq) throws SugarException {
 		if (! seq.matches("WSS")) {
-			throw new SugarException("Syntax error " + seq);
+			syntaxError(seq);
 		}
 		Sequence def = (Sequence)seq.get(1);
 		String name = def.get(0).stringValue();
@@ -204,7 +218,7 @@ public class Converter {
 
 	private void convertRelationDefinition(Sequence seq) throws SugarException {
 		if (! seq.matches("WWIS")) {
-			throw new SugarException("Syntax error " + seq);
+			syntaxError(seq);
 		}
 		String name = seq.get(1).stringValue();
 		int arity = seq.get(2).integerValue();
@@ -217,9 +231,17 @@ public class Converter {
 		equivMap.put(x, v);
 	}
 
-	private void checkArity(Expression x, int arity) throws SugarException {
+	protected void syntaxError(String s) throws SugarException {
+		throw new SugarException("Syntax error " + s);
+	}
+	
+	protected void syntaxError(Expression x) throws SugarException {
+		syntaxError(x.toString());
+	}
+	
+	protected void checkArity(Expression x, int arity) throws SugarException {
 		if (! x.isSequence(arity)) {
-			throw new SugarException("Syntax error " + x);
+			syntaxError(x);
 		}
 	}
 
@@ -253,7 +275,7 @@ public class Converter {
 	private LinearSum convertString(Atom x) throws SugarException {
 		String s = x.stringValue();
 		if (csp.getIntegerVariable(s) == null) {
-			throw new SugarException("Syntax error " + x);
+			syntaxError(x);
 		}
 		IntegerVariable v = csp.getIntegerVariable(s);
 		return new LinearSum(v);
@@ -271,7 +293,7 @@ public class Converter {
 	private LinearSum convertSUB(Sequence seq) throws SugarException {
 		LinearSum e = null;
 		if (seq.length() == 1) {
-			throw new SugarException("Syntax error " + seq);
+			syntaxError(seq);
 		} else if (seq.length() == 2) {
 			e = convertFormula(seq.get(1));
 			e.multiply(-1);
@@ -323,20 +345,22 @@ public class Converter {
 		} else if (d2.size() == 1) {
 			e1.multiply(d2.getLowerBound());
 			return e1;
-		} else if (d1.size() == 2) {
-			Expression a1 = Expression.create(d1.getLowerBound());
-			Expression a2 = Expression.create(d1.getUpperBound());
-			Expression x = Expression.create(Expression.IF,
-					x1.eq(a1), a1.mul(x2), a2.mul(x2));
+		} else if (d1.size() <= d2.size()) {
+			Expression x = null;
+			Iterator<Integer> iter = d1.values();
+			while (iter.hasNext()) {
+				int a1 = iter.next();
+				if (x == null) {
+					x = x2.mul(a1);
+				} else {
+					x = (x1.ge(a1)).ifThenElse(x2.mul(a1), x);
+				}
+			}
 			return convertIF((Sequence)x);
-		} else if (d2.size() == 2) {
-			Expression a1 = Expression.create(d2.getLowerBound());
-			Expression a2 = Expression.create(d2.getUpperBound());
-			Expression x = Expression.create(Expression.IF,
-					x2.eq(a1), a1.mul(x1), a2.mul(x1));
-			return convertIF((Sequence)x);
+		} else {
+			return convertMUL((Sequence)x2.mul(x1));
 		}
-		// TODO mul
+		/*
 		if (true) {
 			throw new SugarException("Unsupported " + seq);
 		}
@@ -359,6 +383,7 @@ public class Converter {
 		}
 		addEquivalence(v, seq);
 		return new LinearSum(v);
+		*/
 	}
 	
 	private LinearSum convertDIV(Sequence seq) throws SugarException {
@@ -544,7 +569,7 @@ public class Converter {
 		return new LinearSum(v);
 	}
 	
-	private LinearSum convertFormula(Expression x) throws SugarException {
+	protected LinearSum convertFormula(Expression x) throws SugarException {
 		LinearSum e = null;
 		IntegerVariable v = equivMap.get(x);
 		if (v != null) {
@@ -577,7 +602,7 @@ public class Converter {
 			} else if (x.isSequence(Expression.IF)) {
 				e = convertIF((Sequence)x);
 			} else {
-				throw new SugarException("Syntax error " + x);
+				syntaxError(x);
 			}
 		}
 		return e;
@@ -587,10 +612,42 @@ public class Converter {
 		if (e.size() <= 3) {
 			return e;
 		}
+		/*
 		if (! e.isDomainLargerThan(MAX_LINEARSUM_SIZE)) {
 			return e;
 		}
-		IntegerVariable[] vs = e.getVariablesByCoef();
+		*/
+		IntegerVariable var = e.getLargestDomainVariable();
+		if (! e.isDomainLargerThanExcept(MAX_LINEARSUM_SIZE, var)) {
+			return e;
+		}
+		IntegerVariable[] vs = e.getVariablesSorted();
+		/*
+		LinearSum e0 = new LinearSum(e.getB());
+		int domainSize = 1;
+		int i = 0;
+		for (i = 0; i < vs.length - 2 && domainSize <= MAX_LINEARSUM_SIZE; i++) {
+			e0.setA(e.getA(vs[i]), vs[i]);
+			domainSize *= vs[i].getDomain().size();
+		}
+		LinearSum e1 = new LinearSum(0);
+		for (int j = i; j < vs.length; j++) {
+			e1.setA(e.getA(vs[j]), vs[j]);
+		}
+		int factor = e1.factor();
+		if (factor > 1) {
+			e1.divide(factor);
+		}
+		IntegerVariable v = new IntegerVariable(e1.getDomain());
+		v.setComment(v.getName() + " : " + e1);
+		csp.add(v);
+		Expression x = Expression.create(v.getName());
+		Expression ex = e1.toExpression();
+		Expression eq = x.eq(ex);
+		extra.add(eq);
+		e0.setA(factor, v);
+		return e0;
+		*/
 		LinearSum e1 = new LinearSum(0);
 		for (int i = 2; i < vs.length; i++) {
 			e1.setA(e.getA(vs[i]), vs[i]);
@@ -619,19 +676,27 @@ public class Converter {
 		return e0;
 	}
 	
-	private LinearSum simplifyLinearExpression(LinearSum e) throws SugarException {
-		if (e.size() <= 1) {
-			return e;
+	private LinearSum simplifyLinearExpression(LinearSum e, boolean first) throws SugarException {
+		if (ESTIMATE_SATSIZE) {
+			if (e.satSizeLE(MAX_LINEARSUM_SIZE)) {
+				return e;
+			}
+		} else {
+			if (e.size() <= 1 || ! e.isDomainLargerThan(MAX_LINEARSUM_SIZE)) {
+			// if (e.size() <= 1 || ! e.isDomainLargerThanExcept(MAX_LINEARSUM_SIZE)) {
+				return e;
+			}
 		}
-		LinearSum[] es = e.split();
-		e = new LinearSum(0);
+		int b = e.getB();
+		LinearSum[] es = e.split(first ? 3 : SPLITS);
+		e = new LinearSum(b);
 		for (int i = 0; i < es.length; i++) {
 			LinearSum ei = es[i];
 			int factor = ei.factor();
 			if (factor > 1) {
 				ei.divide(factor);
 			}
-			ei = simplifyLinearExpression(ei);
+			ei = simplifyLinearExpression(ei, false);
 			// System.out.println(es[i] + " ==> " + ei);
 			if (ei.size() > 1) {
 				IntegerVariable v = new IntegerVariable(ei.getDomain());
@@ -665,12 +730,19 @@ public class Converter {
 			return clauses;
 		}
 		if (e.size() > 3) {
-			if (e.isDomainLargerThan(MAX_LINEARSUM_SIZE)) {
-				// XXX simplifyLinearExpression is better
-				if (false) {
-					e = simplifyLinearSum(e);
-				} else {
-					e = simplifyLinearExpression(e);
+			if (ESTIMATE_SATSIZE) {
+				if (! e.satSizeLE(MAX_LINEARSUM_SIZE)) {
+					e = simplifyLinearExpression(e, true);
+				}
+			} else {
+				// if (e.isDomainLargerThan(MAX_LINEARSUM_SIZE)) {
+				if (e.isDomainLargerThanExcept(MAX_LINEARSUM_SIZE)) {
+					// XXX simplifyLinearExpression is better
+					if (false) {
+						e = simplifyLinearSum(e);
+					} else {
+						e = simplifyLinearExpression(e, true);
+					}
 				}
 			}
 		}
@@ -737,155 +809,13 @@ public class Converter {
 		for (int i = 1; i < seq.length(); i++) {
 			IntegerVariable v = intMap.get(seq.get(i).stringValue());
 			if (v == null) {
-				throw new SugarException("Syntax error " + seq);
+				syntaxError(seq);
 			}
 			vs[i-1] = v;
 		}
 		return new RelationLiteral(rel.arity, rel.conflicts, rel.tuples, vs);
 	}
 
-	private Expression convertAllDifferent(Sequence seq) throws SugarException {
-		int di = 1;
-		int n = seq.length() - 1;
-		if (n == 1 && seq.get(n).isSequence()) {
-			seq = (Sequence)seq.get(n);
-			n = seq.length();
-			di = 0;
-		}
-		List<Expression> xs = new ArrayList<Expression>();
-		xs.add(Expression.AND);
-		for (int i = 0; i < n; i++) {
-			for (int j = i + 1; j < n; j++) {
-				xs.add(seq.get(i+di).ne(seq.get(j+di)));
-			}
-		}
-		int lb = Integer.MAX_VALUE;
-		int ub = Integer.MIN_VALUE;
-		for (int i = 0; i < n; i++) {
-			IntegerDomain d = convertFormula(seq.get(i+di)).getDomain();
-			lb = Math.min(lb, d.getLowerBound());
-			ub = Math.max(ub, d.getUpperBound());
-		}
-		List<Expression> xs1 = new ArrayList<Expression>();
-		xs1.add(Expression.AND);
-		List<Expression> xs2 = new ArrayList<Expression>();
-		xs2.add(Expression.AND);
-		for (int i = 0; i < n; i++) {
-			xs1.add(seq.get(i+di).lt(Expression.create(lb + n - 1)));
-			xs2.add(seq.get(i+di).gt(Expression.create(ub - n + 1)));
-		}
-		Expression x = Expression.create(xs)
-		.and(Expression.create(xs1).not())
-		.and(Expression.create(xs2).not());
-		return x;
-	}
-	
-	private Expression convertWeightedSum(Sequence seq) throws SugarException {
-		checkArity(seq, 3);
-		if (! seq.get(1).isSequence()) {
-			throw new SugarException("Syntax error " + seq);
-		}
-		Sequence seq1 = (Sequence)seq.get(1);
-		Expression x2 = seq.get(2);
-		Expression x3 = seq.get(3);
-		List<Expression> xs1 = new ArrayList<Expression>();
-		xs1.add(Expression.ADD);
-		for (int i = 0; i < seq1.length(); i++) {
-			if (! seq1.get(i).isSequence()) {
-				throw new SugarException("Syntax error " + seq);
-			}
-			Sequence seqi = (Sequence)seq1.get(i);
-			checkArity(seqi, 1);
-			xs1.add(seqi.get(0).mul(seqi.get(1)));
-		}
-		List<Expression> xs = new ArrayList<Expression>();
-		xs.add(x2);
-		xs.add(Expression.create(xs1));
-		xs.add(x3);
-		Expression x = Expression.create(xs);
-		return x;
-	}
-	
-	private Expression convertCumulative(Sequence seq) throws SugarException {
-		checkArity(seq, 2);
-		if (! seq.get(1).isSequence()) {
-			throw new SugarException("Syntax error " + seq);
-		}
-		Sequence seq1 = (Sequence)seq.get(1);
-		Expression x2 = seq.get(2);
-		int n = seq1.length();
-		Expression[] t0 = new Expression[n];
-		Expression[] t1 = new Expression[n];
-		List<Expression> xs = new ArrayList<Expression>();
-		xs.add(Expression.AND);
-		int lb = Integer.MAX_VALUE;
-		int ub = Integer.MIN_VALUE;
-		for (int i = 0; i < n; i++) {
-			if (! seq1.get(i).isSequence(3)) {
-				throw new SugarException("Syntax error " + seq);
-			}
-			Sequence task = (Sequence)seq1.get(i);
-			Expression origin = task.get(0);
-			Expression duration = task.get(1);
-			Expression end = task.get(2);
-			if (origin.equals(Expression.NIL)) {
-				t0[i] = end.sub(duration);
-				t1[i] = end;
-			} else if (duration.equals(Expression.NIL)) {
-				t0[i] = origin;
-				t1[i] = end;
-			} else if (end.equals(Expression.NIL)) {
-				t0[i] = origin;
-				t1[i] = origin.add(duration);
-			} else {
-				xs.add((origin.add(duration)).eq(end));
-				t0[i] = origin;
-				t1[i] = end;
-			}
-			IntegerDomain d1 = convertFormula(t0[i]).getDomain();
-			IntegerDomain d2 = convertFormula(t1[i]).getDomain();
-			lb = Math.min(lb, d1.getLowerBound());
-			ub = Math.max(ub, d2.getUpperBound() - 1);
-		}
-		for (int value = lb; value <= ub; value++) {
-			Expression t = Expression.create(value);
-			List<Expression> sum = new ArrayList<Expression>();
-			sum.add(Expression.ADD);
-			for (int i = 0; i < n; i++) {
-				Sequence task = (Sequence)seq1.get(i);
-				Expression height = task.get(3);
-				Expression s = Expression.create(Expression.IF,
-						(t0[i].le(t)).and(t1[i].gt(t)),
-						Expression.ONE,
-						Expression.ZERO);
-				sum.add(height.mul(s));
-			}
-			xs.add(Expression.create(sum).le(x2));
-		}
-		Expression x = Expression.create(xs);
-		return x;
-	}
-	
-	private Expression convertElement(Sequence seq) throws SugarException {
-		checkArity(seq, 3);
-		if (! seq.get(2).isSequence()) {
-			throw new SugarException("Syntax error " + seq);
-		}
-		Expression x1 = seq.get(1);
-		Sequence seq2 = (Sequence)seq.get(2);
-		Expression x3 = seq.get(3);
-		int n = seq2.length();
-		List<Expression> xs = new ArrayList<Expression>();
-		xs.add(Expression.AND);
-		xs.add(x1.gt(Expression.ZERO));
-		xs.add(x1.le(Expression.create(n)));
-		for (int i = 0; i < n; i++) {
-			xs.add((x1.eq(Expression.create(i+1))).imp(x3.eq(seq2.get(i))));
-		}
-		Expression x = Expression.create(xs);
-		return x;
-	}
-	
 	private List<Clause> convertConstraint(Expression x, boolean negative) throws SugarException {
 		List<Clause> clauses = null;
 		while (true) {
@@ -912,12 +842,12 @@ public class Converter {
 					clauses.add(clause);
 					break;
 				} else {
-					throw new SugarException("Syntax error " + x);
+					syntaxError(x);
 				}
 			} else {
 				Sequence seq = (Sequence)x;
 				if (seq.length() == 0) {
-					throw new SugarException("Syntax error " + seq);
+					syntaxError(seq);
 				} else if (predicateMap.containsKey(seq.get(0).stringValue())) {
 					x = convertPredicate(seq);
 				} else if (relationMap.containsKey(seq.get(0).stringValue())) {
@@ -1155,15 +1085,29 @@ public class Converter {
 							.add(Expression.create(1)));
 					break;
 				} else if (seq.isSequence(Expression.ALLDIFFERENT) && ! negative) {
-					x = convertAllDifferent(seq);
+					x = GlobalConstraints.convertAllDifferent(this, seq);
 				} else if (seq.isSequence(Expression.WEIGHTEDSUM) && ! negative) {
-					x = convertWeightedSum(seq);
+					x = GlobalConstraints.convertWeightedSum(this, seq);
 				} else if (seq.isSequence(Expression.CUMULATIVE) && ! negative) {
-					x = convertCumulative(seq);
+					x = GlobalConstraints.convertCumulative(this, seq);
 				} else if (seq.isSequence(Expression.ELEMENT) && ! negative) {
-					x = convertElement(seq);
+					x = GlobalConstraints.convertElement(this, seq);
+				} else if (seq.isSequence(Expression.DISJUNCTIVE) && ! negative) {
+					x = GlobalConstraints.convertDisjunctive(this, seq);
+				} else if (seq.isSequence(Expression.LEX_LESS) && ! negative) {
+					x = GlobalConstraints.convertLex_less(this, seq);
+				} else if (seq.isSequence(Expression.LEX_LESSEQ) && ! negative) {
+					x = GlobalConstraints.convertLex_lesseq(this, seq);
+				} else if (seq.isSequence(Expression.NVALUE) && ! negative) {
+					x = GlobalConstraints.convertNvalue(this, seq);
+				} else if (seq.isSequence(Expression.COUNT) && ! negative) {
+					x = GlobalConstraints.convertCount(this, seq);
+				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY) && ! negative) {
+					x = GlobalConstraints.convertGlobal_cardinality(this, seq);
+				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY_WITH_COSTS) && ! negative) {
+					x = GlobalConstraints.convertGlobal_cardinality_with_costs(this, seq);
 				} else {
-					throw new SugarException("Syntax error " + x);
+					syntaxError(x);
 				}
 			}
 		}
@@ -1225,6 +1169,9 @@ public class Converter {
 		}
 		for (Clause clause : clauses) {
 			csp.add(clause);
+			if (INCREMENTAL_PROPAGATE) {
+				clause.propagate();
+			}
 		}
 	}
 
@@ -1254,7 +1201,7 @@ public class Converter {
 			convertExpression(x);
 			count++;
 			if ((100*count)/n >= percent) {
-				Logger.log("converted " + count + " (" + percent + "%) expressions");
+				Logger.fine("converted " + count + " (" + percent + "%) expressions");
 				percent += 10;
 			}
 		}
@@ -1263,7 +1210,7 @@ public class Converter {
 			convertExpression(x);
 			count++;
 			if (count % 1000 == 0) {
-				Logger.log("converted " + count + " extra expressions, remaining " + extra.size());
+				Logger.fine("converted " + count + " extra expressions, remaining " + extra.size());
 			}
 		}
 	}

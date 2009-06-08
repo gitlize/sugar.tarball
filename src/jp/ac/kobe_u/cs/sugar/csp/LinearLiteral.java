@@ -275,7 +275,7 @@ public class LinearLiteral extends Literal {
 			clause[0] = getCode();
 			encoder.writeClause(clause);
 		} else {
-			IntegerVariable[] vs = linearSum.getVariablesByCoef();
+			IntegerVariable[] vs = linearSum.getVariablesSorted();
 			int n = linearSum.size();
 			clause = expand(clause, n);
 			encode(encoder, vs, 0, linearSum.getB(), clause);

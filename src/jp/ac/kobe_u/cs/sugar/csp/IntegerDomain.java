@@ -12,7 +12,8 @@ import jp.ac.kobe_u.cs.sugar.SugarException;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class IntegerDomain {
-	public static final int MAX_SET_SIZE = 128;
+	public static int MAX_SET_SIZE = 128;
+	// public static int MAX_SET_SIZE = 256;
 	private int lb;
 	private int ub;
 	private SortedSet<Integer> domain;
@@ -72,6 +73,10 @@ public class IntegerDomain {
 		}
 	}
 
+	public boolean isContiguous() {
+		return domain == null;
+	}
+	
 	public boolean isEmpty() {
 		return size() == 0;
 	}

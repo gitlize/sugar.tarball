@@ -1,13 +1,16 @@
 package jp.ac.kobe_u.cs.sugar.csp;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import jp.ac.kobe_u.cs.sugar.SugarConstants;
 import jp.ac.kobe_u.cs.sugar.SugarException;
+import jp.ac.kobe_u.cs.sugar.encoder.Encoder;
 import jp.ac.kobe_u.cs.sugar.expression.Expression;
 
 /**
@@ -56,6 +59,10 @@ public class LinearSum {
 	public int getB() {
 		return b;
 	}
+
+	public void setB(int b) {
+		this.b = b;
+	}
 	
 	public SortedMap<IntegerVariable,Integer> getCoef() {
 		return coef;
@@ -103,6 +110,23 @@ public class LinearSum {
 				return true;
 		}
 		return false;
+	}
+	
+	public boolean isDomainLargerThanExcept(long limit, IntegerVariable v) {
+		long size = 1;
+		for (IntegerVariable v0 : coef.keySet()) {
+			if (v0.equals(v))
+				continue;
+			size *= v0.getDomain().size();
+			if (size > limit)
+				return true;
+		}
+		return false;
+	}
+	
+	public boolean isDomainLargerThanExcept(long limit) {
+		IntegerVariable v = getLargestDomainVariable();
+		return isDomainLargerThanExcept(limit, v);
 	}
 	
 	/**
@@ -210,27 +234,81 @@ public class LinearSum {
 		return d;
 	}
 
-	public LinearSum[] split() {
-		LinearSum e1 = new LinearSum(b);
-		LinearSum e2 = new LinearSum(0);
-		int i = 0;
-		for (IntegerVariable v : coef.keySet()) {
-			if (i % 2 == 0) {
-				e1.setA(getA(v), v);
-			} else {
-				e2.setA(getA(v), v);
+	public LinearSum[] split(int m) {
+		if (true) {
+			LinearSum[] es = new LinearSum[m];
+			for (int i = 0; i < m; i++) {
+				es[i] = new LinearSum(0);
 			}
-			i++;
+			IntegerVariable[] vs = getVariablesSorted();
+			for (int i = 0; i < vs.length; i++) {
+				IntegerVariable v = vs[i];
+				es[i % m].setA(getA(v), v);
+			}
+			return es;
+		} else {
+			LinearSum e1 = new LinearSum(0);
+			LinearSum e2 = new LinearSum(0);
+			if (false) {
+				IntegerVariable[] vs = getVariablesSorted();
+				int n2 = vs.length - 2;
+				int i = 0;
+				for (IntegerVariable v : vs) {
+					if (i < n2) {
+						e1.setA(getA(v), v);
+					} else {
+						e2.setA(getA(v), v);
+					}
+					i++;
+				}
+			} else if (true) {
+				int i = 0;
+				for (IntegerVariable v : coef.keySet()) {
+					if (i % 2 == 0) {
+						e1.setA(getA(v), v);
+					} else {
+						e2.setA(getA(v), v);
+					}
+					i++;
+				}
+			} else {
+				int i = 0;
+				int n2 = coef.size() / 2;
+				for (IntegerVariable v : coef.keySet()) {
+					if (i < n2) {
+						e1.setA(getA(v), v);
+					} else {
+						e2.setA(getA(v), v);
+					}
+					i++;
+				}
+			}
+			return new LinearSum[] { e1, e2 };
 		}
-		return new LinearSum[] { e1, e2 };
 	}
 
-	public IntegerVariable[] getVariablesByCoef() {
+	public IntegerVariable getLargestDomainVariable() {
+		IntegerVariable var = null;
+		for (IntegerVariable v : coef.keySet()) {
+			if (var == null || var.getDomain().size() < v.getDomain().size()) {
+				var = v;
+			}
+		}
+		return var;
+	}
+	
+	public IntegerVariable[] getVariablesSorted() {
 		int n = coef.size();
 		IntegerVariable[] vs = new IntegerVariable[n];
 		vs = coef.keySet().toArray(vs);
 		Arrays.sort(vs, new Comparator<IntegerVariable>() {
 			public int compare(IntegerVariable v1, IntegerVariable v2) {
+				if (true) {
+					int s1 = v1.getDomain().size();
+					int s2 = v2.getDomain().size();
+					if (s1 != s2)
+						return s1 < s2 ? -1 : 1;
+				}
 				int a1 = Math.abs(getA(v1));
 				int a2 = Math.abs(getA(v2));
 				if (a1 != a2)
@@ -239,6 +317,83 @@ public class LinearSum {
 			}
 		});
 		return vs;
+	}
+	
+	private long calcSatSize(long limit, IntegerVariable[] vs, int i, int s) throws SugarException {
+		long size = 0;
+		if (i >= vs.length - 1) {
+			size = 1;
+		} else {
+			int lb0 = s;
+			int ub0 = s;
+			for (int j = i + 1; j < vs.length; j++) {
+				int a = getA(vs[j]); 
+				if (a > 0) {
+					lb0 += a * vs[j].getDomain().getLowerBound();
+					ub0 += a * vs[j].getDomain().getUpperBound();
+				} else {
+					lb0 += a * vs[j].getDomain().getUpperBound();
+					ub0 += a * vs[j].getDomain().getLowerBound();
+				}
+			}
+			int a = getA(vs[i]);
+			IntegerDomain domain = vs[i].getDomain();
+			int lb = domain.getLowerBound();
+			int ub = domain.getUpperBound();
+			if (a >= 0) {
+				// ub = Math.min(ub, (int)Math.floor(-(double)lb0 / a));
+				if (-lb0 >= 0) {
+					ub = Math.min(ub, -lb0/a);
+				} else {
+					ub = Math.min(ub, (-lb0-a+1)/a);
+				}
+				Iterator<Integer> iter = domain.values(lb, ub); 
+				while (iter.hasNext()) {
+					int c = iter.next();
+					// vs[i]>=c -> ...
+					// encoder.writeComment(vs[i].getName() + " <= " + (c-1));
+					size += calcSatSize(limit, vs, i+1, s+a*c);
+					if (size > limit) {
+						return size;
+					}
+				}
+				size += calcSatSize(limit, vs, i+1, s+a*(ub+1));
+				if (size > limit) {
+					return size;
+				}
+			} else {
+				// lb = Math.max(lb, (int)Math.ceil(-(double)lb0/a));
+				if (-lb0 >= 0) {
+					lb = Math.max(lb, -lb0/a);
+				} else {
+					lb = Math.max(lb, (-lb0+a+1)/a);
+				}
+				size += calcSatSize(limit, vs, i+1, s+a*(lb-1));
+				if (size > limit) {
+					return size;
+				}
+				Iterator<Integer> iter = domain.values(lb, ub); 
+				while (iter.hasNext()) {
+					int c = iter.next();
+					// vs[i]<=c -> ...
+					size += calcSatSize(limit, vs, i+1, s+a*c);
+					if (size > limit) {
+						return size;
+					}
+				}
+			}
+		}
+		return size;
+	}
+	
+	public boolean satSizeLE(long limit) throws SugarException {
+		if (isSimple()) {
+			return 1 <= limit;
+		} else {
+			IntegerVariable[] vs = getVariablesSorted();
+			long size = calcSatSize(limit, vs, 0, getB());
+			return size <= limit;
+		}
 	}
 	
 	public Expression toExpression() {

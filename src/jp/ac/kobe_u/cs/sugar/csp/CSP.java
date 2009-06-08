@@ -158,13 +158,13 @@ public class CSP {
 	public boolean isUnsatisfiable() throws SugarException {
 		for (IntegerVariable v : integerVariables) {
 			if (v.isUnsatisfiable()) {
-				Logger.log("Unsatisfiable integer variable " + v);
+				Logger.fine("Unsatisfiable integer variable " + v);
 				return true;
 			}
 		}
 		for (Clause c : clauses) {
 			if (c.isUnsatisfiable()) {
-				Logger.log("Unsatisfiable constraint " + c.toString());
+				Logger.fine("Unsatisfiable constraint " + c.toString());
 				return true;
 			}
 		}
@@ -205,7 +205,7 @@ public class CSP {
 				i++;
 			}
 		}
-		Logger.log(removedValues + " values, " 
+		Logger.fine(removedValues + " values, " 
 				+ removedLiterals + " unsatisfiable literals, and "
 				+ removedClauses + " valid clauses are removed");
 		return removedValues + removedLiterals + removedClauses;
@@ -252,6 +252,26 @@ public class CSP {
 		clauses = newClauses;
 	}
 
+	public void compact() throws SugarException {
+		throw new SugarException("Unimplemented method compact()");
+		/*
+		int n = integerVariables.size();
+		for (int i = 0; i < n; i++) {
+			IntegerVariable v = integerVariables.get(i);
+			v.compact(this);
+		}
+		List<Clause> newClauses = new ArrayList<Clause>();
+		for (Clause clause : clauses) {
+			if (clause.isCompact()) {
+				newClauses.add(clause);
+			} else {
+				newClauses.addAll(compact(clause));
+			}
+		}
+		clauses = newClauses;
+		*/
+	}
+	
 	/**
 	 * Returns true when the CSP is satisfied.
 	 * @return true when the CSP is satisfied
@@ -259,13 +279,13 @@ public class CSP {
 	public boolean isSatisfied() {
 		for (IntegerVariable v : integerVariables) {
 			if (! v.isSatisfied()) {
-				Logger.println(v.toString() + " is not satisfied");
+				// Logger.fine(v.toString() + " is not satisfied");
 				return false;
 			}
 		}
 		for (Clause clause : clauses) {
 			if (! clause.isSatisfied()) {
-				Logger.println(clause.toString() + " is not satisfied");
+				// Logger.fine(clause.toString() + " is not satisfied");
 				return false;
 			}
 		}
@@ -289,27 +309,27 @@ public class CSP {
 		}
 	}
 
-	public void output(PrintStream out) {
+	public void output(PrintStream out, String pre) {
 		for (IntegerVariable v : integerVariables) {
 			if (v.getComment() != null) {
-				out.print("; ");
+				out.print(pre + "; ");
 				out.println(v.getComment());
 			}
-			out.println(v.toString());
+			out.println(pre + v.toString());
 		}
 		for (BooleanVariable v : booleanVariables) {
 			if (v.getComment() != null) {
-				out.print("; ");
+				out.print(pre + "; ");
 				out.println(v.getComment());
 			}
-			out.println(v.toString());
+			out.println(pre + v.toString());
 		}
 		for (Clause clause : clauses) {
 			if (clause.getComment() != null) {
-				out.print("; ");
+				out.print(pre + "; ");
 				out.println(clause.getComment());
 			}
-			out.println(clause.toString());
+			out.println(pre + clause.toString());
 		}
 		IntegerVariable v = getObjectiveVariable();
 		if (v != null) {
@@ -319,7 +339,7 @@ public class CSP {
 			} else if (objective == Objective.MAXIMIZE) {
 				obj = "maximize";
 			}
-			out.println("(objective " + obj + " " + v.getName() + ")");
+			out.println(pre + "(objective " + obj + " " + v.getName() + ")");
 		}
 	}
 
@@ -343,7 +363,7 @@ public class CSP {
 	public String toString() {
 		ByteArrayOutputStream bs = new ByteArrayOutputStream();
 		PrintStream out = new PrintStream(bs);
-		output(out);
+		output(out, "");
 		return bs.toString();
 	}
 

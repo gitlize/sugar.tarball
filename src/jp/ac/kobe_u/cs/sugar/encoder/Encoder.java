@@ -2,10 +2,12 @@ package jp.ac.kobe_u.cs.sugar.encoder;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.StreamTokenizer;
 import java.io.UnsupportedEncodingException;
@@ -17,6 +19,7 @@ import java.util.List;
 import jp.ac.kobe_u.cs.sugar.Logger;
 import jp.ac.kobe_u.cs.sugar.SugarConstants;
 import jp.ac.kobe_u.cs.sugar.SugarException;
+import jp.ac.kobe_u.cs.sugar.SugarMain;
 import jp.ac.kobe_u.cs.sugar.csp.BooleanVariable;
 import jp.ac.kobe_u.cs.sugar.csp.CSP;
 import jp.ac.kobe_u.cs.sugar.csp.Clause;
@@ -38,7 +41,11 @@ public class Encoder {
 	
 	public static int SAT_BUFFER_SIZE = 4*1024;
 	
-	public static long MAX_SAT_SIZE = 2*1024*1024*1024L;
+	public static long MAX_SAT_SIZE = 3*1024*1024*1024L;
+	
+	public static boolean OPT_COMPACT = false;
+	
+	public static int BASE = 10;
 	
 	private CSP csp;
 	
@@ -120,7 +127,7 @@ public class Encoder {
 	}
 	
 	public void writeComment(String comment) throws IOException {
-		if (false) {
+		if (SugarMain.debug >= 1) {
 			write("c " + comment + "\n");
 		}
 	}
@@ -192,7 +199,7 @@ public class Encoder {
 			v.encode(this);
 			count++;
 			if ((100*count)/n >= percent) {
-				Logger.log(count + " (" + percent + "%) "
+				Logger.fine(count + " (" + percent + "%) "
 						+ "CSP integer variables are encoded"
 						+ " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
 				percent += 10;
@@ -205,12 +212,17 @@ public class Encoder {
 		n = csp.getClauses().size();
 		percent = 10;
 		for (Clause c : csp.getClauses()) {
+			int satClausesCount0 = satClausesCount;
 			if (! c.isValid()) {
 				c.encode(this);
 			}
 			count++;
+			if (SugarMain.debug >= 1) {
+				int k = satClausesCount - satClausesCount0;
+				Logger.fine(k + " SAT clauses for " + c);
+			}
 			if ((100*count)/n >= percent) {
-				Logger.log(count + " (" + percent + "%) "
+				Logger.fine(count + " (" + percent + "%) "
 						+ "CSP clauses are encoded"
 						+ " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
 				percent += 10;
@@ -229,7 +241,7 @@ public class Encoder {
 			satStringBuffer = null;
 			satByteArray = null;
 		}
-		Logger.log(count + " CSP clauses encoded");
+		Logger.fine(count + " CSP clauses encoded");
 		RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
 		satFile1.seek(0);
 		if (csp.getObjectiveVariable() == null || incremental) {
@@ -264,8 +276,10 @@ public class Encoder {
 	}
 
 	public void outputMap(String mapFileName) throws SugarException, IOException {
-		BufferedOutputStream mapFile =
-			new BufferedOutputStream(new FileOutputStream(mapFileName));
+		BufferedWriter mapWriter = new BufferedWriter(
+				new OutputStreamWriter(new FileOutputStream(mapFileName), "UTF-8"));
+//		BufferedOutputStream mapFile =
+//			new BufferedOutputStream(new FileOutputStream(mapFileName));
 		if (csp.getObjectiveVariable() != null) {
 			String s = "objective ";
 			if (csp.getObjective().equals(CSP.Objective.MINIMIZE)) {
@@ -274,8 +288,10 @@ public class Encoder {
 				s += SugarConstants.MAXIMIZE;
 			}
 			s += " " + csp.getObjectiveVariable().getName();
-			mapFile.write(s.getBytes());
-			mapFile.write('\n');
+//			mapFile.write(s.getBytes());
+//			mapFile.write('\n');
+			mapWriter.write(s);
+			mapWriter.write('\n');
 		}
 		for (IntegerVariable v : csp.getIntegerVariables()) {
 			if (! v.isAux()) {
@@ -283,19 +299,24 @@ public class Encoder {
 				StringBuilder sb = new StringBuilder();
 				sb.append("int " + v.getName() + " " + code + " ");
 				v.getDomain().appendValues(sb);
-				mapFile.write(sb.toString().getBytes());
-				mapFile.write('\n');
+//				mapFile.write(sb.toString().getBytes());
+//				mapFile.write('\n');
+				mapWriter.write(sb.toString());
+				mapWriter.write('\n');
 			}
 		}
 		for (BooleanVariable v : csp.getBooleanVariables()) {
 			if (! v.isAux()) {
 				int code = v.getCode();
 				String s = "bool " + v.getName() + " " + code;
-				mapFile.write(s.getBytes());
-				mapFile.write('\n');
+//				mapFile.write(s.getBytes());
+//				mapFile.write('\n');
+				mapWriter.write(s);
+				mapWriter.write('\n');
 			}
 		}
-		mapFile.close();
+//		mapFile.close();
+		mapWriter.close();
 	}
 
 	/*

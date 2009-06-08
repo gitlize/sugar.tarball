@@ -44,5 +44,12 @@ public class SugarConstants {
 	public static final String WEIGHTEDSUM = "weightedsum";
 	public static final String CUMULATIVE = "cumulative";
 	public static final String ELEMENT = "element";
+	public static final String DISJUNCTIVE = "disjunctive";
+	public static final String LEX_LESS = "lex_less";
+	public static final String LEX_LESSEQ = "lex_lesseq";
+	public static final String NVALUE = "nvalue";
+	public static final String COUNT = "count";
+	public static final String GLOBAL_CARDINALITY = "global_cardinality";
+	public static final String GLOBAL_CARDINALITY_WITH_COSTS = "global_cardinality_with_costs";
 	public static final String NIL = "nil";
 }

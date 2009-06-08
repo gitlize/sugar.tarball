@@ -1,8 +1,10 @@
 package jp.ac.kobe_u.cs.sugar.expression;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +63,7 @@ public class Parser {
 		for (char c : chars) {
 			st.wordChars(c, c);
 		}
+		st.wordChars(0x000080, 0x10FFFF);
 		st.parseNumbers();
 		st.eolIsSignificant(false);
 	}
@@ -80,15 +83,9 @@ public class Parser {
 			switch (st.ttype) {
 			case StreamTokenizer.TT_WORD:
 				String s = st.sval;
-				if (s.matches("[a-zA-Z_]\\w*")) {
+				x = conv.get(s);
+				if (x == null) {
 					x = Expression.create(s);
-//				} else if (s.matches("-?\\d+")) {
-//					x = Expression.create(Integer.parseInt(s));
-				} else {
-					x = conv.get(s);
-					if (x == null) {
-						throw new IOException("Bad sybmol " + s + " at line " + st.lineno());
-					}
 				}
 				expressions.add(x);
 				break;
@@ -118,7 +115,7 @@ public class Parser {
 				if (stack.isEmpty()) {
 					int n = expressions.size();
 					if (n % 10000 == 0) {
-						Logger.log("parsed " + n + " expressions");
+						Logger.fine("parsed " + n + " expressions");
 					}
 				}
 				break;
@@ -147,7 +144,8 @@ public class Parser {
 		String fileName = args[0];
 		try {
 			BufferedReader reader;
-			reader = new BufferedReader(new FileReader(fileName));
+			reader = new BufferedReader(new InputStreamReader(
+					new FileInputStream(fileName), "UTF-8"));
 			Parser parser = new Parser(reader);
 			List<Expression> expressions = parser.parse();
 			for (Expression x : expressions) {

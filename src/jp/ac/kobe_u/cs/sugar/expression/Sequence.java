@@ -32,7 +32,9 @@ public class Sequence extends Expression {
 			if (expressions.length > 0) {
 				Expression op = expressions[0];
 				boolean flattable = false;
-				if (op.equals(Expression.ADD)) {
+				if (op.equals(Expression.ADD)
+						|| op.equals(Expression.AND)
+						|| op.equals(Expression.OR)) {
 					for (int i = 1; i < expressions.length; i++) {
 						if (expressions[i].isSequence(op)) {
 							flattable = true;

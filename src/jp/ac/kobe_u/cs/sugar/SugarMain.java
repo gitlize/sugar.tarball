@@ -13,9 +13,11 @@ import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
 import jp.ac.kobe_u.cs.sugar.converter.Converter;
+import jp.ac.kobe_u.cs.sugar.csp.BooleanVariable;
 import jp.ac.kobe_u.cs.sugar.csp.CSP;
 import jp.ac.kobe_u.cs.sugar.csp.IntegerDomain;
 import jp.ac.kobe_u.cs.sugar.csp.IntegerVariable;
+import jp.ac.kobe_u.cs.sugar.csp.LinearSum;
 import jp.ac.kobe_u.cs.sugar.encoder.Encoder;
 import jp.ac.kobe_u.cs.sugar.expression.Expression;
 import jp.ac.kobe_u.cs.sugar.expression.Parser;
@@ -28,6 +30,7 @@ public class SugarMain {
 	boolean maxCSP = false;
 	boolean competition = false;
 	boolean incremental = false;
+	public static int debug = 0;
 
 	private List<Expression> toMaxCSP(List<Expression> expressions0) throws SugarException {
 		List<Expression> expressions = new ArrayList<Expression>();
@@ -72,49 +75,60 @@ public class SugarMain {
 				Expression.OBJECTIVE_DEFINITION,
 				Expression.MINIMIZE,
 				cost));
-		Logger.log("MAX CSP: " + n + " constraints");
+		Logger.info("MAX CSP: " + n + " constraints");
 		return expressions;
 	}
 	
 	public void encode(String cspFileName, String satFileName, String mapFileName)
 	throws SugarException, IOException {
-		Logger.log("Parsing " + cspFileName);
-		BufferedReader reader;
+		Logger.fine("Parsing " + cspFileName);
+		InputStream in;
 		if (cspFileName.endsWith(".gz")) {
-			InputStream in = new GZIPInputStream(new FileInputStream(cspFileName));
-			reader = new BufferedReader(new InputStreamReader(in));
+			in = new GZIPInputStream(new FileInputStream(cspFileName));
 		} else {
-			reader = new BufferedReader(new FileReader(cspFileName));
+			in = new FileInputStream(cspFileName);
 		}
+		BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		Parser parser = new Parser(reader);
 		List<Expression> expressions = parser.parse();
-		Logger.log("parsed " + expressions.size() + " expressions");
+		Logger.info("parsed " + expressions.size() + " expressions");
 		Logger.status();
 		if (maxCSP) {
 			expressions = toMaxCSP(expressions);
 		}
-		Logger.log("Converting to clausal form CSP");
+		Logger.fine("Converting to clausal form CSP");
 		CSP csp = new CSP();
 		Converter converter = new Converter(csp);
 		converter.convert(expressions);
-		Logger.log("CSP : " + csp.summary());
+		Logger.fine("CSP : " + csp.summary());
+		// csp.output(System.out, "c ");
 		Logger.status();
-		// csp.output(System.out);
-		Logger.log("Propagation in CSP");
+		Logger.fine("Propagation in CSP");
 		csp.propagate();
-		Logger.log("CSP : " + csp.summary());
+		Logger.fine("CSP : " + csp.summary());
+		// csp.output(System.out, "c ");
 		Logger.status();
-		// csp.output(System.out);
 		if (csp.isUnsatisfiable()) {
-			Logger.log("CSP is unsatisfiable");
+			Logger.info("CSP is unsatisfiable after propagation");
 			Logger.println("s UNSATISFIABLE");
 		} else {
-			Logger.log("Simplifing CSP by introducing new Boolean variables");
+			if (Encoder.OPT_COMPACT) {
+				Logger.fine("Compacting CSP");
+				csp.compact();
+				Logger.info("CSP : " + csp.summary());
+				if (debug > 0) {
+					csp.output(System.out, "c ");
+				}
+				Logger.status();
+			}
+			Logger.fine("Simplifing CSP by introducing new Boolean variables");
 			csp.simplify();
-			Logger.log("CSP : " + csp.summary());
+			Logger.info("CSP : " + csp.summary());
+			if (debug > 0) {
+				csp.output(System.out, "c ");
+			}
 			Logger.status();
-			// csp.output(System.out);
-
+			
 			parser = null;
 			converter = null;
 			expressions = null;
@@ -122,26 +136,27 @@ public class SugarMain {
 			Runtime.getRuntime().gc();
 
 			if (csp.isUnsatisfiable()) {
-				Logger.log("CSP is unsatisfiable after propagation");
+				Logger.info("CSP is unsatisfiable after propagation");
 				Logger.println("s UNSATISFIABLE");
 			} else {
-				Logger.log("Encoding CSP to SAT : " + satFileName);
+				Logger.fine("Encoding CSP to SAT : " + satFileName);
 				Encoder encoder = new Encoder(csp);
 				encoder.encode(satFileName, incremental);
-				Logger.log("Writing map file : " + mapFileName);
+				Logger.fine("Writing map file : " + mapFileName);
 				encoder.outputMap(mapFileName);
 				Logger.status();
-				Logger.log("SAT : " + encoder.summary());
+				Logger.info("SAT : " + encoder.summary());
 			}
 		}
 	}
 	
 	public void decode(String outFileName, String mapFileName)
 	throws SugarException, IOException {
-		Logger.log("Decoding " + outFileName);
+		Logger.fine("Decoding " + outFileName);
 		CSP csp = new CSP();
 		String objectiveVariableName = null;
-		BufferedReader rd = new BufferedReader(new FileReader(mapFileName));
+		BufferedReader rd = new BufferedReader(
+				new InputStreamReader(new FileInputStream(mapFileName), "UTF-8"));
 		while (true) {
 			String line = rd.readLine();
 			if (line == null)
@@ -195,6 +210,11 @@ public class SugarMain {
 				}
 			} else if (s[0].equals("bool")) {
 				// TODO
+				String name = s[1];
+				int code = Integer.parseInt(s[2]);
+				BooleanVariable v = new BooleanVariable(name);
+				v.setCode(code);
+				csp.add(v);
 			}
 		}
 		rd.close();
@@ -222,6 +242,11 @@ public class SugarMain {
 						Logger.println("a " + v.getName() + "\t" + v.getValue());
 					}
 				}
+				for (BooleanVariable v : csp.getBooleanVariables()) {
+					if (! v.isAux() && ! v.getName().startsWith("_")) {
+						Logger.println("a " + v.getName() + "\t" + v.getValue());
+					}
+				}
 				Logger.println("a");
 			}
 		} else {
@@ -244,6 +269,37 @@ public class SugarMain {
 					sugarMain.competition = true;
 				} else if (args[i].equals("-incremental")) {
 					sugarMain.incremental = true;
+				} else if (args[i].equals("-option") && i + 1 < args.length) {
+					String[] opts = args[i+1].split(",");
+					for (String opt : opts) {
+						if (opt.matches("(no_)?pigeon")) {
+							Converter.OPT_PIGEON = ! opt.startsWith("no_");
+						} else if (opt.matches("(no_)?compact")) {
+							Encoder.OPT_COMPACT = ! opt.startsWith("no_");
+						} else if (opt.matches("(no_)?estimate_satsize")) {
+							Converter.ESTIMATE_SATSIZE = ! opt.startsWith("no_");
+						} else if (opt.matches("equiv=(\\d+)")) {
+							int n = "equiv=".length();
+							Converter.MAX_EQUIVMAP_SIZE = Integer.parseInt(opt.substring(n));
+						} else if (opt.matches("linearsum=(\\d+)")) {
+							int n = "linearsum=".length();
+							Converter.MAX_LINEARSUM_SIZE = Long.parseLong(opt.substring(n));
+						} else if (opt.matches("split=(\\d+)")) {
+							int n = "split=".length();
+							Converter.SPLITS = Integer.parseInt(opt.substring(n));
+						} else if (opt.matches("domain=(\\d+)")) {
+							int n = "domain=".length();
+							IntegerDomain.MAX_SET_SIZE = Integer.parseInt(opt.substring(n));
+						} else {
+							throw new SugarException("Unknown option " + opt);
+						}
+					}
+					i++;
+				} else if (args[i].equals("-debug") && i + 1 < args.length) {
+					debug = Integer.parseInt(args[i+1]);
+					i++;
+				} else if (args[i].equals("-v") || args[i].equals("-verbose")) {
+					Logger.verboseLevel++;
 				} else if (args[i].startsWith("-")) {
 					option = args[i];
 					break;
@@ -265,20 +321,20 @@ public class SugarMain {
 				for (String a : args) {
 					s += " " + a;
 				}
-				throw new SugarException("Invalid arguments" + s);
+				throw new SugarException("Invalid arguments " + s);
 			}
 			Logger.status();
 		} catch (Exception e) {
-			Logger.log("ERROR Exception " + e.getMessage());			
+			Logger.println("c ERROR Exception " + e.getMessage());			
 			for (StackTraceElement t : e.getStackTrace()) {
-				Logger.log(t.toString());
+				Logger.info(t.toString());
 			}
 			Logger.println("s UNKNOWN");
 			System.exit(1);
 		} catch (Error e) {
-			Logger.log("ERROR Exception " + e.getMessage());			
+			Logger.println("c ERROR Exception " + e.getMessage());			
 			for (StackTraceElement t : e.getStackTrace()) {
-				Logger.log(t.toString());
+				Logger.info(t.toString());
 			}
 			Logger.println("s UNKNOWN");
 			System.exit(1);

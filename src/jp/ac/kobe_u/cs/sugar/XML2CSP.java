@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.zip.GZIPInputStream;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -22,6 +23,7 @@ import org.xml.sax.SAXException;
  *
  */
 public class XML2CSP {
+	private static int debug = 0;
 	private String xmlFileName;
 	private String cspFileName;
 	private Document document;
@@ -71,6 +73,23 @@ public class XML2CSP {
 	private static final String SCOPE = "scope";
 	private static final String REFERENCE = "reference";
 
+	private static HashSet<String> supportedGlobalConstraints;
+	
+	static {
+		supportedGlobalConstraints = new HashSet<String>();
+		supportedGlobalConstraints.add(SugarConstants.ALLDIFFERENT);
+		supportedGlobalConstraints.add(SugarConstants.WEIGHTEDSUM);
+		supportedGlobalConstraints.add(SugarConstants.CUMULATIVE);
+		supportedGlobalConstraints.add(SugarConstants.ELEMENT);
+		supportedGlobalConstraints.add(SugarConstants.DISJUNCTIVE);
+		supportedGlobalConstraints.add(SugarConstants.LEX_LESS);
+		supportedGlobalConstraints.add(SugarConstants.LEX_LESSEQ);
+		supportedGlobalConstraints.add(SugarConstants.NVALUE);
+		supportedGlobalConstraints.add(SugarConstants.COUNT);
+		supportedGlobalConstraints.add(SugarConstants.GLOBAL_CARDINALITY);
+		supportedGlobalConstraints.add(SugarConstants.GLOBAL_CARDINALITY_WITH_COSTS);
+	}
+	
 	/**
 	 * Constructs a XCSP to CSP converter.
 	 * @param xmlFileName
@@ -183,6 +202,10 @@ public class XML2CSP {
 			String params = "";
 			if (reference.startsWith("global:")) {
 				reference = reference.replaceFirst("global:", "").toLowerCase();
+				if (! supportedGlobalConstraints.contains(reference)) {
+					System.out.println("s UNSUPPORTED");
+					throw new IOException("global:" + reference + " is not supported");
+				}
 				if (parameters == null) {
 					params = scope;
 				} else {
@@ -252,21 +275,37 @@ public class XML2CSP {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (args.length != 2) {
-			System.out.println("Usage : java XML2CSP xmlFileName cspFileName");
+		int i = 0;
+		while (i < args.length) {
+			if (args[i].equals("-v") || args[i].equals("-verbose")) {
+				Logger.verboseLevel++;
+			} else if (args[i].equals("-debug") && i + 1 < args.length) {
+				debug = Integer.parseInt(args[i+1]);
+				i++;
+			} else if (! args[i].startsWith("-")) {
+				break;
+			}
+			i++;
+		}
+		int n = args.length - i;
+		if (n != 2) {
+			System.out.println("Usage : java XML2CSP [-v] xmlFileName cspFileName");
 			System.exit(1);
 		}
-		String xmlFileName = args[0];
-		String cspFileName = args[1];
+		String xmlFileName = args[i];
+		String cspFileName = args[i + 1];
 		try {
 			XML2CSP xml2csp = new XML2CSP(xmlFileName, cspFileName);
 			xml2csp.load();
 			xml2csp.convert();
 		} catch (IOException e) {
+			System.out.println("c ERROR Exception " + e.getMessage());
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
+			System.out.println("c ERROR Exception " + e.getMessage());
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.out.println("c ERROR Exception " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

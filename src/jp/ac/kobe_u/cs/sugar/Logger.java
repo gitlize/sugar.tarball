@@ -5,7 +5,8 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 
 public class Logger {
-	private static final long MEGA = 1000000; 
+	private static final long MEGA = 1024*1024;
+	public static int verboseLevel = 0;
 
 	public static void print(String message) {
 		System.out.print(message);
@@ -15,9 +16,16 @@ public class Logger {
 		System.out.println(message);
 	}
 
-	public static void log(String message) {
-		print("c ");
-		println(message);
+	public static void info(String message) {
+		if (verboseLevel >= 1) {
+			println("c " + message);
+		}
+	}
+
+	public static void fine(String message) {
+		if (verboseLevel >= 2) {
+			println("c " + message);
+		}
 	}
 
 	static void status() {
@@ -32,9 +40,9 @@ public class Logger {
 		long nonHeapUsed = nonHeapUsage.getUsed() / Logger.MEGA;
 //		long nonHeapCommitted = nonHeapUsage.getCommitted() / MEGA;
 		long nonHeapMax = nonHeapUsage.getMax() / Logger.MEGA;
-		log(
-				"Heap : " + heapUsed + " MB used (max " + heapMax + " MB), " +
-				"NonHeap : " + nonHeapUsed + " MB used (max " + nonHeapMax + " MB)"
+		fine(
+				"Heap : " + heapUsed + " MiB used (max " + heapMax + " MiB), " +
+				"NonHeap : " + nonHeapUsed + " MiB used (max " + nonHeapMax + " MiB)"
 		);
 	}
 

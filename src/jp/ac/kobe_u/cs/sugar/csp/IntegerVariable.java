@@ -21,6 +21,8 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
 	private boolean modified = true;
 	private int code;
 	private int value;
+	private int offset;
+	private IntegerVariable[] vs = null;
 	
 	public IntegerVariable(String name, IntegerDomain domain) throws SugarException {
 		this.name = name;
@@ -141,7 +143,33 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
 		return domain.contains(value);
 	}
 
+	public void compact(CSP csp) throws SugarException {
+		if (! domain.isContiguous() || domain.size() <= Encoder.BASE) {
+			return;
+		}
+		vs = new IntegerVariable[2];
+		offset = domain.getLowerBound();
+		int max = domain.getUpperBound() - offset;
+		int ub0 = Encoder.BASE - 1;
+		int ub1 = max / Encoder.BASE;
+		vs[0] = new IntegerVariable(new IntegerDomain(0, ub0));
+		csp.add(vs[0]);
+		vs[1] = new IntegerVariable(new IntegerDomain(0, ub1));
+		csp.add(vs[1]);
+		int c = max % Encoder.BASE;
+		if (c != Encoder.BASE - 1) {
+			Clause clause = new Clause();
+			clause.add(new LinearLiteral(
+					new LinearSum(1, vs[1], -ub1+1)));
+			clause.add(new LinearLiteral(
+					new LinearSum(1, vs[0], -c)));
+			csp.add(clause);
+		}
+	}
+	
 	public int getSatVariablesSize() {
+		if (vs != null)
+			return 0;
 		return domain.size() - 1;
 	}
 
@@ -180,15 +208,19 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
 
 	public void encode(Encoder encoder) throws IOException {
 		encoder.writeComment(toString());
-		int[] clause = new int[2];
-		int a0 = domain.getLowerBound();
-		for (int a = a0 + 1; a <= domain.getUpperBound(); a++) {
-			if (domain.contains(a)) {
-				clause[0] = Encoder.negateCode(getCodeLE(a0));
-				clause[1] = getCodeLE(a);
-				encoder.writeClause(clause);
-				a0 = a;
+		if (vs == null) {
+			int[] clause = new int[2];
+			int a0 = domain.getLowerBound();
+			for (int a = a0 + 1; a <= domain.getUpperBound(); a++) {
+				if (domain.contains(a)) {
+					clause[0] = Encoder.negateCode(getCodeLE(a0));
+					clause[1] = getCodeLE(a);
+					encoder.writeClause(clause);
+					a0 = a;
+				}
 			}
+		} else {
+			
 		}
 	}
 

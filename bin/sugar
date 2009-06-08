@@ -1,25 +1,35 @@
 #!/usr/bin/perl
+##
+## This program is a part of Sugar software package (a SAT-based Constraint Solver).
+## http;//bach.istc.kobe-u.ac.jp/sugar/
+## (C) Naoyuki Tamura, Tomoya Tanjo, and Mutsunori Banbara
+##
 use Getopt::Long;
+use FileHandle;
+use IPC::Open2;
 use strict;
 $| = 1;
 
-my $version = "v1-13";
+my $version = "v1-14-6";
 my $java = "java";
 my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
-my $solver = "minisat";
+my $solver0 = "minisat";
+my $solver0_inc = "minisat-inc";
 my $tmp = "/tmp/sugar$$";
 
-my ($showversion, $help, $debug, $verbose, $veryverbose);
-my ($competition, $keep, $incremental, $prof);
+my ($showversion, $help, $debug, $verbose, $veryverbose, $option);
+my ($java_opt1, $java_opt2, $solver, $competition, $keep, $incremental, $prof);
 my ($max_csp, $csp_file, $map_file, $sat_file, $out_file);
+my ($memlimit, $timelimit);
 &GetOptions(
 	    'version' => \$showversion,
 	    'h|help' => \$help,
-	    'debug' => \$debug,
+	    'debug=i' => \$debug,
 	    'v|verbose' => \$verbose,
 	    'vv|veryverbose' => \$veryverbose,
 	    'c|competition' => \$competition,
-	    'incremental' => \$incremental,
+	    'i|incremental' => \$incremental,
+	    'o|option=s' => \$option,
 	    'max' => \$max_csp,
 	    'tmp=s' => \$tmp,
 	    'csp=s' => \$csp_file,
@@ -28,11 +38,32 @@ my ($max_csp, $csp_file, $map_file, $sat_file, $out_file);
 	    'out=s' => \$out_file,
 	    'jar=s' => \$jar,
 	    'java=s' => \$java,
+	    'jopt1=s' => \$java_opt1,
+	    'jopt2=s' => \$java_opt2,
 	    'prof=s' => \$prof,
 	    'solver=s' => \$solver,
 	    'keep' => \$keep,
+	    'memlimit=i' => \$memlimit,
+	    'timelimit=i' => \$timelimit,
 	    );
 $verbose = $verbose || $veryverbose;
+if (! $solver) {
+    $solver = $incremental ? $solver0_inc : $solver0;
+}
+if (! $java_opt1) {
+    if ($memlimit > 200) {
+	$java_opt1 = sprintf("-Xmx%dM", $memlimit-200);
+    }
+}
+if (! $java_opt2) {
+    if ($incremental) {
+	$java_opt2 = "-Xmx50M";
+    } else {
+	if ($memlimit > 200) {
+	    $java_opt2 = sprintf("-Xmx%dM", $memlimit-200);
+	}
+    }
+}
 
 if ($showversion) {
     print "Sugar $version + $solver\n";
@@ -47,12 +78,12 @@ my $xml_file;
 
 &setup(@ARGV);
 
-my ($pid, $result, $objective_value);
+my ($java_pid, $solver_pid, $result, $objective_value);
 my ($objective, $objective_var, $objective_code, @objective_values);
 
 my $time0 = time;
 
-$ENV{'LANG'} = "C";
+# $ENV{'LANG'} = "C";
 setpgrp($$, $$);
 
 &main();
@@ -61,11 +92,12 @@ exit 0;
 sub usage {
     print "Usage: $0 [options] csp_file\n";
     print "\t-h -help         : show help\n";
-#    print "\t-debug           : debug output\n";
+    print "\t-debug level     : debug option\n";
     print "\t-v -verbose      : verbose output\n";
     print "\t-vv -veryverbose : verbose output\n";
     print "\t-c -competition  : CSP Solver Competition mode\n";
-    print "\t-incremental     : use MiniSat incremental search\n";
+    print "\t-i -incremental  : use incremental search (you need a patched SAT solver)\n";
+    print "\t-o -option o1,.. : set options (e.g. -pigeon)\n";
     print "\t-max             : MAX-CSP mode\n";
     print "\t-tmp prefix      : path and prefix of temporay files\n";
     print "\t-csp file        : output CSP file name for XCSP input\n";
@@ -73,10 +105,14 @@ sub usage {
     print "\t-map file        : mapping file name\n";
     print "\t-out file        : SAT solver output file name\n";
     print "\t-java command    : java command (default: $java)\n";
+    print "\t-jopt1 option    : java option for encoding\n";
+    print "\t-jopt2 option    : java option for decoding\n";
     print "\t-jar file        : jar file name to be used (default: $jar)\n";
     print "\t-prof file       : java CPU profiling\n";
-    print "\t-solver command  : SAT solver command (default: $solver)\n";
+    print "\t-solver command  : SAT solver command (default: $solver0)\n";
     print "\t-keep            : do not erase temporary files\n";
+    print "\t-memlimit MiB    : memory limit in MiB (for CSP solver competition)\n";
+    print "\t-timelimit sec   : time limit in seconds (for CSP solver competition)\n";
     exit(1);
 }
 
@@ -145,38 +181,72 @@ sub handler {
     $SIG{'INT'} = 'IGNORE';
     $SIG{'TERM'} = 'IGNORE';
     kill(-2, $$);
-    # kill(-15, $$);
     $SIG{'INT'} = 'DEFAULT';
     $SIG{'TERM'} = 'DEFAULT';
-    if ($pid) {
-	kill(2, $pid);
-	# kill(15, $pid);
-	while (<CMD>) {
+    if ($java_pid) {
+	kill(2, $java_pid);
+	$java_pid = undef;
+	while (<JAVA>) {
 	    chomp;
 	    if ($verbose) {
 		&print($_);
 	    }
 	}
-	close(CMD);
+	close(JAVA);
+    }
+    if ($solver_pid) {
+	kill(2, $solver_pid);
+	if ($incremental) {
+	    &send("exit");
+	    close(Writer);
+	    while (<Reader>) {
+		chomp;
+		if ($verbose) {
+		    &print($_);
+		}
+	    }
+	    close(Reader);
+	} else {
+	    while (<SOLVER>) {
+		chomp;
+		if ($verbose) {
+		    &print($_);
+		}
+	    }
+	    close(SOLVER);
+	}
+	$solver_pid = undef;
     }
     die;
 }
 
 sub java {
-    my ($class, $args, $prof) = @_;
-    my $cmd = $java;
+    my ($opt, $class, $args, $prof) = @_;
+    my $cmd = "$java $opt";
     if ($prof) {
 	$cmd .= " -agentlib:hprof=cpu=samples,depth=8,file=$prof";
     }
-    $cmd .= " -cp '$jar' $class $args";
-    &log("CMD $cmd");
-    $pid = open(CMD, "$cmd 2>&1 |") || die;
-    while (<CMD>) {
+    $cmd .= " -cp '$jar' $class";
+    if ($verbose) {
+	$cmd .= " -v";
+    }
+    if ($veryverbose) {
+	$cmd .= " -v";
+    }
+    if ($debug) {
+	$cmd .= " -debug $debug";
+    }
+    $cmd .= " $args";
+    if ($veryverbose) {
+	&log("CMD $cmd");
+    }
+    $java_pid = open(JAVA, "$cmd 2>&1 |") || die;
+    while (<JAVA>) {
 	chomp;
 	&print($_);
     }
-    close(CMD);
-    $pid = undef;
+    close(JAVA);
+    $java_pid = undef;
 }
 
 ################################################################
@@ -192,11 +262,16 @@ sub main {
 	$result = "";
 	&log("Sugar $version + $solver");
 	&log("BEGIN", scalar(localtime));
-	&log("PID", $$);
-	chomp($_ = `hostname`);
-	&log("HOST", $_);
+	if ($veryverbose) {
+	    &log("PID", $$);
+	    chomp($_ = `hostname`);
+	    &log("HOST", $_);
+	}
 	if ($xml_file) {
 	    &convert($xml_file, $csp_file);
+	    if ($result) {
+		die;
+	    }
 	}
 	if (-e $csp_file) {
 	    &encode($csp_file, $sat_file, $map_file);
@@ -215,7 +290,8 @@ sub main {
 	}
 	wait;
 	my @t = times;
-	my $cpu = $t[0] + $t[2];
+#	my $cpu = $t[0] + $t[2];
+	my $cpu = $t[0] + $t[1] + $t[2] + $t[3];
 	$_ = "(" . join(" ", @t) . ")";
 	&log("CPU", $cpu, $_);
 	&log("END", scalar(localtime));
@@ -234,7 +310,7 @@ sub convert {
 	&error("no XML file $xml_file");
     } else {
 	my $class = "jp.ac.kobe_u.cs.sugar.XML2CSP";
-	&java($class, "'$xml_file' '$csp_file'");
+	&java($java_opt1, $class, "'$xml_file' '$csp_file'");
     }
 }
 
@@ -252,9 +328,29 @@ sub encode {
 	if ($incremental) {
 	    $arg .= " -incremental";
 	}
+	if ($option) {
+	    $arg .= " -option $option";
+	}
 	$arg .= " -encode '$csp_file' '$sat_file' '$map_file'";
-	&java($class, $arg, $prof);
+	&java($java_opt1, $class, $arg, $prof);
     }
+}
+
+sub decode {
+    my ($out_file, $map_file) = @_;
+    &log("DECODING $out_file WITH $map_file");
+    if (! -e $out_file) {
+	&error("no output file $out_file");
+	return;
+    }
+    if (! -e $map_file) {
+	&error("no map file $map_file");
+	return;
+    }
+    my $class = "jp.ac.kobe_u.cs.sugar.SugarMain";
+    my $arg = $competition ? "-competition " : "";
+    $arg .= "-decode '$out_file' '$map_file'";
+    &java($java_opt2, $class, $arg);
 }
 
 sub solve {
@@ -326,11 +422,6 @@ sub find {
     &decode($out_file, $map_file);
 }
 
-sub minimize_inc {
-    my ($sat_file, $out_file, $map_file) = @_;
-    die;
-}
-
 sub minimize {
     my ($sat_file, $out_file, $map_file) = @_;
     my $sat_size = (stat($sat_file))[7];
@@ -383,11 +474,6 @@ sub minimize {
     } else {
 	&print("s UNSATISFIABLE");
     }
-}
-
-sub maximize_inc {
-    my ($sat_file, $out_file, $map_file) = @_;
-    die;
 }
 
 sub maximize {
@@ -458,31 +544,178 @@ sub sat {
     } elsif ($solver =~ /picosat/) {
 	$cmd = "$solver '$sat_file' -o '$out_file'";
     }
-    &log("CMD $cmd");
-    $pid = open(CMD, "$cmd 2>&1 |") || die;
-    while (<CMD>) {
+    if ($veryverbose) {
+	&log("CMD $cmd");
+    }
+    $solver_pid = open(SOLVER, "$cmd 2>&1 |") || die;
+    while (<SOLVER>) {
 	chomp;
 	if ($veryverbose) {
 	    &log($_);
 	}
     }
-    close(CMD);
-    $pid = undef;
+    close(SOLVER);
+    $solver_pid = undef;
 }
 
-sub decode {
-    my ($out_file, $map_file) = @_;
-    &log("DECODING $out_file WITH $map_file");
-    if (! -e $out_file) {
-	&error("no output file $out_file");
-	return;
+sub minimize_inc {
+    my ($sat_file, $out_file, $map_file) = @_;
+    my $i0 = 0;
+    my $i1 = scalar(@objective_values);
+    my $found = 0;
+    &sat_inc_open($sat_file, $out_file);
+    while ($i0 < $i1) {
+	my $i = int(($i0+$i1) / 2);
+	my $value = $objective_values[$i];
+	my $code = $objective_code + $i;
+	&log("OBJECTIVE BOUND:",
+	     $objective_values[$i0], "<=", $objective_var,
+	     "<=", $objective_values[$i1]);
+	&log("SEARCHING: $objective_var <= $value");
+	unlink $out_file;
+	if ($i < @objective_values - 1) {
+	    &send("solve $code 0");
+	} else {
+	    &send("solve 1 -1 0");
+	}
+	&recv();
+	open(IN, "<$out_file") || die;
+	chomp($_ = <IN>);
+	close(IN);
+	if (/^(s\s+)?SAT/) {
+	    &log("FOUND: $objective_var <= $value");
+	    if (! $found) {
+		&print("s SATISFIABLE");
+	    }
+	    $found = 1;
+	    $i1 = $i;
+	    &decode($out_file, $map_file);
+	    while ($i1 > 0 && $objective_value < $value) {
+		$i1--;
+		$value = $objective_values[$i1];
+	    }
+	    $code = $objective_code+$i1;
+	    &send("add $code 0");
+	    &recv();
+	} elsif (/^(s\s+)?UNSAT/) {
+	    &log("NOT FOUND: $objective_var <= $value");
+	    &send("add -$code 0");
+	    &recv();
+	    $i0 = $i + 1;
+	} else {
+	    &error("unknown output $_ in $out_file");
+	    &send("exit");
+	    &sat_inc_close();
+	    return;
+	}
     }
-    if (! -e $map_file) {
-	&error("no map file $map_file");
-	return;
+    &send("exit");
+    &sat_inc_close();
+    if ($found) {
+	&log("OBJECTIVE $objective_var $objective_value");
+	&print("s OPTIMUM FOUND");
+    } else {
+	&print("s UNSATISFIABLE");
     }
-    my $class = "jp.ac.kobe_u.cs.sugar.SugarMain";
-    my $arg = $competition ? "-competition " : "";
-    $arg .= "-decode '$out_file' '$map_file'";
-    &java($class, $arg);
 }
+
+sub maximize_inc {
+    my ($sat_file, $out_file, $map_file) = @_;
+    my $i0 = -1;
+    my $i1 = scalar(@objective_values) - 1;
+    my $found = 0;
+    &sat_inc_open($sat_file, $out_file);
+    while ($i0 < $i1) {
+	my $i = int(($i0+$i1) / 2);
+	my $value = $objective_values[$i];
+	my $code = $objective_code + $i;
+	&log("OBJECTIVE BOUND:",
+	     $objective_values[$i0], "<=", $objective_var,
+	     "<=", $objective_values[$i1]);
+	&log("SEARCHING: $objective_var > $value");
+	unlink $out_file;
+	if ($i >= 0) {
+	    &send("solve -$code 0");
+	} else {
+	    &send("solve 1 -1 0");
+	}
+	&recv();
+	open(IN, "<$out_file") || die;
+	chomp($_ = <IN>);
+	close(IN);
+	if (/^(s\s+)?SAT/) {
+	    &log("FOUND: $objective_var > $value");
+	    if (! $found) {
+		&print("s SATISFIABLE");
+	    }
+	    $found = 1;
+	    $i0 = $i;
+	    &decode($out_file, $map_file);
+	    while ($i0 < @objective_values && $objective_value > $value) {
+		$i0++;
+		$value = $objective_values[$i0];
+	    }
+	    $code = $objective_code+$i1;
+	    &send("add -$code 0");
+	    &recv();
+	} elsif (/^(s\s+)?UNSAT/) {
+	    &log("NOT FOUND: $objective_var > $value");
+	    &send("add $code 0");
+	    &recv();
+	    $i1 = $i;
+	} else {
+	    &error("unknown output $_ in $out_file");
+	    &send("exit");
+	    &sat_inc_close();
+	    return;
+	}
+    }
+    &send("exit");
+    &sat_inc_close();
+    if ($found) {
+	&log("OBJECTIVE $objective_var $objective_value");
+	&print("s OPTIMUM FOUND");
+    } else {
+	&print("s UNSATISFIABLE");
+    }
+}
+
+sub sat_inc_open {
+    my ($sat_file, $out_file) = @_;
+    &log("SOLVING $sat_file");
+    if (! -e $sat_file) {
+	&error("no SAT file $sat_file");
+	return;
+    }
+    my $cmd = $solver;
+    $cmd .= " -incremental '$sat_file' '$out_file'";
+    if ($veryverbose) {
+	&log("CMD $cmd");
+    }
+    $solver_pid = open2(*Reader, *Writer, "$cmd 2>&1") || die;
+    my $old = select; select(Writer); $| = 1; select($old);
+    &recv();
+}
+
+sub sat_inc_close {
+    close(Reader);
+    close(Writer);
+    $solver_pid = undef;
+}
+
+sub send {
+    my ($msg) = @_;
+    print Writer $msg."\n";
+}
+
+sub recv {
+    while (<Reader>) {
+	chomp;
+	if ($_ eq "OK") {
+	    return;
+	}
+	&log($_);
+    }
+    die;
+}
+
