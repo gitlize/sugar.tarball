@@ -5,7 +5,7 @@
 ## See Job-shop scheduling web page in OR-Library
 ##     http://people.brunel.ac.uk/~mastjjb/jeb/orlib/jobshopinfo.html
 ##
-## This program is a part of Sugar (A Sat-based Constraint Solver)
+## This program is a part of Sugar (a SAT-based Constraint Solver)
 ## software package.
 ##     http://bach.istc.kobe-u.ac.jp/sugar/
 ## (C) Naoyuki Tamura
@@ -14,15 +14,19 @@ use Getopt::Std;
 use strict;
 $| = 1;
 
-use vars qw($opt_h);
+use vars qw($opt_h $opt_b $opt_x $opt_m);
 
-&getopts("h");
+&getopts("hbxm:");
 my $in = shift(@ARGV);
 
 if ($opt_h) {
     print "Usage: $0 file.jss >file.csp\n";
     exit(1);
 }
+
+my $bool = $opt_b;
+my $exclusive = $opt_x;
+my $makespan = $opt_m;
 
 my ($jobs, $machines);
 my @j_m = ();
@@ -83,7 +87,11 @@ sub write_csp {
     my $lb = &lower_bound();
     my $ub = &upper_bound();
     print "(int makespan $lb $ub)\n";
-    print "(objective minimize makespan)\n";
+    if ($makespan) {
+	print "(<= makespan $makespan)\n";
+    } else {
+	print "(objective minimize makespan)\n";
+    }
     foreach my $i (0 .. $jobs-1) {
 	foreach my $j (0 .. $machines-1) {
 	    my $s = "s_${i}_${j}";
@@ -111,7 +119,21 @@ sub write_csp {
 		my $s1 = "s_${i1}_${j1}";
 		my $p0 = $j_p[$i0][$j0];
 		my $p1 = $j_p[$i1][$j1];
-		print "(or (<= (+ $s0 $p0) $s1) (<= (+ $s1 $p1) $s0))\n";
+		if ($bool) {
+		    my $p01 = "p_${i0}_${j0}_${j1}";
+		    print "(bool $p12)\n";
+		    my $p10 = "p_${i0}_${j1}_${j0}";
+		    if ($exclusive) {
+			$p10 = "(! $p01)";
+		    } else {
+			print "(bool $p10)\n";
+			print "(or $p01 $p10)\n";
+		    }
+		    print "(imp $p01 (<= (+ $s0 $p0) $s1))\n";
+		    print "(imp $p10 (<= (+ $s1 $p1) $s0))\n";
+		} else {
+		    print "(or (<= (+ $s0 $p0) $s1) (<= (+ $s1 $p1) $s0))\n";
+		}
 	    }
 	}
     }

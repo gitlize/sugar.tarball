@@ -5,7 +5,7 @@
 ## See Social Golfer Problem web page in CSPLib
 ##     http://www.dcs.st-and.ac.uk/~ianm/CSPLib/prob/prob010/index.html
 ##
-## This program is a part of Sugar (A Sat-based Constraint Solver)
+## This program is a part of Sugar (a SAT-based Constraint Solver)
 ## software package.
 ##     http://bach.istc.kobe-u.ac.jp/sugar/
 ## (C) Naoyuki Tamura

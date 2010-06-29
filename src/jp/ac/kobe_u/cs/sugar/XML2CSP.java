@@ -279,9 +279,11 @@ public class XML2CSP {
 		while (i < args.length) {
 			if (args[i].equals("-v") || args[i].equals("-verbose")) {
 				Logger.verboseLevel++;
-			} else if (args[i].equals("-debug") && i + 1 < args.length) {
-				debug = Integer.parseInt(args[i+1]);
-				i++;
+            } else if (args[i].equals("-debug") && i + 1 < args.length) {
+                debug = Integer.parseInt(args[i+1]);
+                i++;
+            } else if (args[i].equals("-option") && i + 1 < args.length) {
+                i++;
 			} else if (! args[i].startsWith("-")) {
 				break;
 			}

@@ -30,7 +30,8 @@ public class Converter {
 	public static boolean OPT_PIGEON = true;
 	public static boolean INCREMENTAL_PROPAGATE = true;
 	public static boolean ESTIMATE_SATSIZE = false; // bad
-	public static int SPLITS = 2;
+    public static boolean NEW_VARIABLE = true;
+    public static int SPLITS = 2;
 	
 	private class EquivMap extends LinkedHashMap<Expression,IntegerVariable> {
 
@@ -729,7 +730,7 @@ public class Converter {
 			clauses.add(new Clause());
 			return clauses;
 		}
-		if (e.size() > 3) {
+		if (NEW_VARIABLE && e.size() > 3) {
 			if (ESTIMATE_SATSIZE) {
 				if (! e.satSizeLE(MAX_LINEARSUM_SIZE)) {
 					e = simplifyLinearExpression(e, true);

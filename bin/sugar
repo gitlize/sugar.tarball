@@ -10,7 +10,7 @@ use IPC::Open2;
 use strict;
 $| = 1;
 
-my $version = "v1-14-6";
+my $version = "v1-14-7";
 my $java = "java";
 my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
 my $solver0 = "minisat";
@@ -20,7 +20,7 @@ my $tmp = "/tmp/sugar$$";
 my ($showversion, $help, $debug, $verbose, $veryverbose, $option);
 my ($java_opt1, $java_opt2, $solver, $competition, $keep, $incremental, $prof);
 my ($max_csp, $csp_file, $map_file, $sat_file, $out_file);
-my ($memlimit, $timelimit);
+my ($memlimit, $timelimit, $solverlimit);
 &GetOptions(
 	    'version' => \$showversion,
 	    'h|help' => \$help,
@@ -58,6 +58,7 @@ if (! $java_opt1) {
 if (! $java_opt2) {
     if ($incremental) {
 	$java_opt2 = "-Xmx50M";
+	$solverlimit = $memlimit-200-50 if $memlimit > 250;
     } else {
 	if ($memlimit > 200) {
 	    $java_opt2 = sprintf("-Xmx%dM", $memlimit-200);
@@ -112,7 +113,7 @@ sub usage {
     print "\t-solver command  : SAT solver command (default: $solver0)\n";
     print "\t-keep            : do not erase temporary files\n";
     print "\t-memlimit MiB    : memory limit in MiB (for CSP solver competition)\n";
-    print "\t-timelimit sec   : time limit in seconds (for CSP solver competition)\n";
+#    print "\t-timelimit sec   : time limit in seconds (reserved for CSP solver competition)\n";
     exit(1);
 }
 
@@ -233,6 +234,9 @@ sub java {
     if ($veryverbose) {
 	$cmd .= " -v";
     }
+    if ($option) {
+	$cmd .= " -option $option";
+    }
     if ($debug) {
 	$cmd .= " -debug $debug";
     }
@@ -327,9 +331,6 @@ sub encode {
 	}
 	if ($incremental) {
 	    $arg .= " -incremental";
-	}
-	if ($option) {
-	    $arg .= " -option $option";
 	}
 	$arg .= " -encode '$csp_file' '$sat_file' '$map_file'";
 	&java($java_opt1, $class, $arg, $prof);
@@ -446,7 +447,9 @@ sub minimize {
 	&log("SEARCHING: $objective_var <= $value");
 	&sat($sat_file, $out_file);
 	open(IN, "<$out_file") || die;
-	chomp($_ = <IN>);
+	do {
+	    chomp($_ = <IN>);
+	} while (/^c/ || /^\s*$/);
 	close(IN);
 	if (/^(s\s+)?SAT/) {
 	    &log("FOUND: $objective_var <= $value");
@@ -538,20 +541,37 @@ sub sat {
 	return;
     }
     unlink $out_file;
-    my $cmd = "$solver '$sat_file' '$out_file'";
-    if ($solver =~ /rsat/) {
-	$cmd = "$solver '$sat_file' -r '$out_file'";
+    my $cmd = "$solver '$sat_file'";
+    if ($solver =~ /minisat/) {
+	$cmd = "$solver '$sat_file' '$out_file'";
+	$out_file = undef;
     } elsif ($solver =~ /picosat/) {
 	$cmd = "$solver '$sat_file' -o '$out_file'";
+	$out_file = undef;
+    } elsif ($solver =~ /rsat/) {
+	$cmd = "$solver '$sat_file' -r '$out_file'";
+	$out_file = undef;
     }
     if ($veryverbose) {
 	&log("CMD $cmd");
     }
     $solver_pid = open(SOLVER, "$cmd 2>&1 |") || die;
-    while (<SOLVER>) {
-	chomp;
-	if ($veryverbose) {
-	    &log($_);
+    if ($out_file) {
+	open(OUT, ">$out_file") || die;
+	while (<SOLVER>) {
+	    chomp;
+	    print OUT "$_\n";
+	    if ($veryverbose && ! /^v/) {
+		&log($_);
+	    }
+	}
+	close(OUT);
+    } else {
+	while (<SOLVER>) {
+	    chomp;
+	    if ($veryverbose && ! /^v/) {
+		&log($_);
+	    }
 	}
     }
     close(SOLVER);
@@ -576,7 +596,7 @@ sub minimize_inc {
 	if ($i < @objective_values - 1) {
 	    &send("solve $code 0");
 	} else {
-	    &send("solve 1 -1 0");
+	    &send("solve 0");
 	}
 	&recv();
 	open(IN, "<$out_file") || die;
@@ -637,7 +657,7 @@ sub maximize_inc {
 	if ($i >= 0) {
 	    &send("solve -$code 0");
 	} else {
-	    &send("solve 1 -1 0");
+	    &send("solve 0");
 	}
 	&recv();
 	open(IN, "<$out_file") || die;
@@ -688,6 +708,9 @@ sub sat_inc_open {
 	return;
     }
     my $cmd = $solver;
+    if ($solverlimit) {
+	$cmd .= sprintf(" -mem-limit=%d", $solverlimit);
+    }
     $cmd .= " -incremental '$sat_file' '$out_file'";
     if ($veryverbose) {
 	&log("CMD $cmd");

@@ -294,7 +294,7 @@ public class Encoder {
 			mapWriter.write('\n');
 		}
 		for (IntegerVariable v : csp.getIntegerVariables()) {
-			if (! v.isAux()) {
+			if (! v.isAux() || SugarMain.debug > 0) {
 				int code = v.getCode();
 				StringBuilder sb = new StringBuilder();
 				sb.append("int " + v.getName() + " " + code + " ");
@@ -306,7 +306,7 @@ public class Encoder {
 			}
 		}
 		for (BooleanVariable v : csp.getBooleanVariables()) {
-			if (! v.isAux()) {
+			if (! v.isAux() || SugarMain.debug > 0) {
 				int code = v.getCode();
 				String s = "bool " + v.getName() + " " + code;
 //				mapFile.write(s.getBytes());
@@ -351,41 +351,69 @@ public class Encoder {
 	*/
 
 	public boolean decode(String outFileName) throws SugarException, IOException {
+		String result = null;
 		boolean sat = false;
 		BufferedReader rd = new BufferedReader(new FileReader(outFileName));
 		StreamTokenizer st = new StreamTokenizer(rd);
-		st.eolIsSignificant(false);
-		st.nextToken();
-		if (st.sval != null && st.sval.equals("s")) {
+		st.eolIsSignificant(true);
+		while (result == null) {
 			st.nextToken();
-		}
-		if (st.sval != null) {
-			if (st.sval.startsWith("SAT")) {
-				sat = true;
-				BitSet satValues = new BitSet();
-				while (true) {
+			if (st.ttype == StreamTokenizer.TT_WORD) {
+				if (st.sval.equals("c")) {
+					do {
+						st.nextToken();
+					} while (st.ttype != StreamTokenizer.TT_EOL);
+				} else if (st.sval.equals("s")) {
 					st.nextToken();
-					if (st.ttype == StreamTokenizer.TT_EOF)
-						break;
-					if (st.sval != null)
-						continue;
+					result = st.sval;
+				} else {
+					result = st.sval;
+				}
+			} else {
+				throw new SugarException("Unknown output " + st.sval);
+			}
+		} 
+		if (result.startsWith("SAT")) {
+			sat = true;
+			BitSet satValues = new BitSet();
+			while (true) {
+				st.nextToken();
+				if (st.ttype == StreamTokenizer.TT_EOF)
+					break;
+				switch (st.ttype) {
+				case StreamTokenizer.TT_EOL:
+					break;
+				case StreamTokenizer.TT_WORD:
+					if (st.sval.equals("v")) {
+					} else if (st.sval.equals("c")) {
+						do {
+							st.nextToken();
+						} while (st.ttype != StreamTokenizer.TT_EOL);
+					} else {
+						throw new SugarException("Unknown output " + st.sval);
+					}
+					break;
+				case StreamTokenizer.TT_NUMBER:
 					int value = (int)st.nval;
 					int i = Math.abs(value);
-					satValues.set(i, value > 0);
+					if (i > 0) {
+						satValues.set(i, value > 0);
+					}
+					break;
+				default:
+					throw new SugarException("Unknown output " + st.sval);
 				}
-				for (IntegerVariable v : csp.getIntegerVariables()) {
-					v.decode(satValues);
-				}
-				for (BooleanVariable v : csp.getBooleanVariables()) {
-					v.decode(satValues);
-				}
-			} else if (st.sval.startsWith("UNSAT")) {
-				sat = false;
-			} else {
-				throw new SugarException("Unknown Encoder output " + st.sval);
 			}
+			for (IntegerVariable v : csp.getIntegerVariables()) {
+				v.decode(satValues);
+			}
+			for (BooleanVariable v : csp.getBooleanVariables()) {
+				v.decode(satValues);
+			}
+		} else if (result.startsWith("UNSAT")) {
+			sat = false;
 		} else {
-			throw new SugarException("Unknown Encoder output");
+			throw new SugarException("Unknown output result " + result);
 		}
 		rd.close();
 		return sat;

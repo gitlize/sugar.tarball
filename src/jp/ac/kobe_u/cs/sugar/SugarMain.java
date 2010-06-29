@@ -30,6 +30,7 @@ public class SugarMain {
 	boolean maxCSP = false;
 	boolean competition = false;
 	boolean incremental = false;
+	boolean propagate = true;
 	public static int debug = 0;
 
 	private List<Expression> toMaxCSP(List<Expression> expressions0) throws SugarException {
@@ -99,13 +100,16 @@ public class SugarMain {
 		Logger.fine("Converting to clausal form CSP");
 		CSP csp = new CSP();
 		Converter converter = new Converter(csp);
+		converter.INCREMENTAL_PROPAGATE = propagate;
 		converter.convert(expressions);
 		Logger.fine("CSP : " + csp.summary());
 		// csp.output(System.out, "c ");
-		Logger.status();
-		Logger.fine("Propagation in CSP");
-		csp.propagate();
-		Logger.fine("CSP : " + csp.summary());
+		if (propagate) {
+			Logger.status();
+			Logger.fine("Propagation in CSP");
+			csp.propagate();
+			Logger.fine("CSP : " + csp.summary());
+		}
 		// csp.output(System.out, "c ");
 		Logger.status();
 		if (csp.isUnsatisfiable()) {
@@ -278,6 +282,9 @@ public class SugarMain {
 							Encoder.OPT_COMPACT = ! opt.startsWith("no_");
 						} else if (opt.matches("(no_)?estimate_satsize")) {
 							Converter.ESTIMATE_SATSIZE = ! opt.startsWith("no_");
+                            Encoder.OPT_COMPACT = ! opt.startsWith("no_");
+                        } else if (opt.matches("(no_)?new_variable")) {
+                            Converter.NEW_VARIABLE = ! opt.startsWith("no_");
 						} else if (opt.matches("equiv=(\\d+)")) {
 							int n = "equiv=".length();
 							Converter.MAX_EQUIVMAP_SIZE = Integer.parseInt(opt.substring(n));
@@ -287,9 +294,9 @@ public class SugarMain {
 						} else if (opt.matches("split=(\\d+)")) {
 							int n = "split=".length();
 							Converter.SPLITS = Integer.parseInt(opt.substring(n));
-						} else if (opt.matches("domain=(\\d+)")) {
-							int n = "domain=".length();
-							IntegerDomain.MAX_SET_SIZE = Integer.parseInt(opt.substring(n));
+                        } else if (opt.matches("domain=(\\d+)")) {
+                            int n = "domain=".length();
+                            IntegerDomain.MAX_SET_SIZE = Integer.parseInt(opt.substring(n));
 						} else {
 							throw new SugarException("Unknown option " + opt);
 						}

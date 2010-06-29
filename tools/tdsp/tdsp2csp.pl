@@ -5,7 +5,7 @@
 ## See Two-Dimensional Strip Packing web page in OR-Library
 ##     http://people.brunel.ac.uk/~mastjjb/jeb/orlib/stripinfo.html
 ##
-## This program is a part of Sugar (A Sat-based Constraint Solver)
+## This program is a part of Sugar (a SAT-based Constraint Solver)
 ## software package.
 ##     http://bach.istc.kobe-u.ac.jp/sugar/
 ## (C) Naoyuki Tamura

@@ -5,7 +5,7 @@
 ## See Open-shop scheduling web page in OR-Library
 ##     http://people.brunel.ac.uk/~mastjjb/jeb/orlib/openshopinfo.html
 ##
-## This program is a part of Sugar (A Sat-based Constraint Solver)
+## This program is a part of Sugar (a SAT-based Constraint Solver)
 ## software package.
 ##     http://bach.istc.kobe-u.ac.jp/sugar/
 ## (C) Naoyuki Tamura
@@ -14,9 +14,9 @@ use Getopt::Std;
 use strict;
 $| = 1;
 
-use vars qw($opt_h $opt_c);
+use vars qw($opt_h $opt_c $opt_b $opt_x $opt_m);
 
-&getopts("hc");
+&getopts("hcbxm:");
 
 if ($opt_h) {
     print "Usage: $0 file.oss >file.csp\n";
@@ -26,6 +26,9 @@ if ($opt_h) {
 my $n;
 my @pt = ();
 my $cumulative = $opt_c;
+my $bool = $opt_b;
+my $exclusive = $opt_x;
+my $makespan = $opt_m;
 
 &read_oss();
 &write_csp();
@@ -74,7 +77,11 @@ sub write_csp {
     my $lb = &lower_bound();
     my $ub = &upper_bound();
     print "(int makespan $lb $ub)\n";
-    print "(objective minimize makespan)\n";
+    if ($makespan) {
+	print "(<= makespan $makespan)\n";
+    } else {
+	print "(objective minimize makespan)\n";
+    }
     foreach my $j (0 .. $n-1) {
 	foreach my $m (0 .. $n-1) {
 	    my $s = "s_${j}_${m}";
@@ -112,7 +119,21 @@ sub write_csp {
 		foreach my $k ($m+1 .. $n-1) {
 		    my $s2= "s_${j}_${k}";
 		    my $p2 = $pt[$j]->[$k];
-		    print "(or (<= (+ $s1 $p1) $s2) (<= (+ $s2 $p2) $s1))\n";
+		    if ($bool) {
+			my $p12 = "p_${j}_${m}_${k}";
+			print "(bool $p12)\n";
+			my $p21 = "p_${j}_${k}_${m}";
+			if ($exclusive) {
+			    $p21 = "(! $p12)";
+			} else {
+			    print "(bool $p21)\n";
+			    print "(or $p12 $p21)\n";
+			}
+			print "(imp $p12 (<= (+ $s1 $p1) $s2))\n";
+			print "(imp $p21 (<= (+ $s2 $p2) $s1))\n";
+		    } else {
+			print "(or (<= (+ $s1 $p1) $s2) (<= (+ $s2 $p2) $s1))\n";
+		    }
 		}
 	    }
 	}
@@ -123,7 +144,21 @@ sub write_csp {
 		foreach my $k ($j+1 .. $n-1) {
 		    my $s2= "s_${k}_${m}";
 		    my $p2 = $pt[$k]->[$m];
-		    print "(or (<= (+ $s1 $p1) $s2) (<= (+ $s2 $p2) $s1))\n";
+		    if ($bool) {
+			my $p12 = "q_${m}_${j}_${k}";
+			print "(bool $p12)\n";
+			my $p21 = "q_${m}_${k}_${j}";
+			if ($exclusive) {
+			    $p21 = "(! $p12)";
+			} else {
+			    print "(bool $p21)\n";
+			    print "(or $p12 $p21)\n";
+			}
+			print "(imp $p12 (<= (+ $s1 $p1) $s2))\n";
+			print "(imp $p21 (<= (+ $s2 $p2) $s1))\n";
+		    } else {
+			print "(or (<= (+ $s1 $p1) $s2) (<= (+ $s2 $p2) $s1))\n";
+		    }
 		}
 	    }
 	}
