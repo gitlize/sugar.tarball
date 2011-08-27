@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class Encoder {
 	
 	private CSP csp;
 	
-	// private String satFileName;
+	private String satFileName;
 
 	private BufferedOutputStream satFile;
 
@@ -57,18 +58,24 @@ public class Encoder {
 
 	private byte[] satByteArray;
 	
-	private FileChannel satFileChannel; 
+    private FileChannel satFileChannel; 
 
 	private ByteBuffer satByteBuffer;
 	
 	// private String outFileName;
 
-	private int satVariablesCount = 0;
+    private int satVariablesCount = 0;
 
-	private int satClausesCount = 0;
+    private int satClausesCount = 0;
+    
+    private long satFileSize = 0;
+
+    private int satVariablesCountSave = 0;
+
+    private int satClausesCountSave = 0;
+    
+    private long satFileSizeSave = 0;
 	
-	private long satFileSize = 0;
-
 	public static int negateCode(int code) {
 		if (code == FALSE_CODE) {
 			code = TRUE_CODE;
@@ -86,9 +93,30 @@ public class Encoder {
 		// this.outFileName = outFileName;
 	}
 
-	public int getSatClausesCount() {
-		return satClausesCount;
+	public void commit() {
+	    satVariablesCountSave = satVariablesCount;
+	    satClausesCountSave = satClausesCount;
+	    satFileSizeSave = satFileSize;
 	}
+	
+    public void cancel() throws IOException {
+        satVariablesCount = satVariablesCountSave;
+        satClausesCount = satClausesCountSave;
+        satFileSize = satFileSizeSave;
+        RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
+        satFile1.seek(0);
+        satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
+        satFile1.setLength(satFileSize);
+        satFile1.close();
+    }
+	
+	public int getSatVariablesCount() {
+		return satVariablesCount;
+	}
+
+    public int getSatClausesCount() {
+        return satClausesCount;
+    }
 
 	public long getSatFileSize() {
 		return satFileSize;
@@ -169,93 +197,131 @@ public class Encoder {
 		return s.toString();
 	}
 
-	public void encode(String satFileName, boolean incremental) throws SugarException, IOException {
-		satFileSize = 0;
-		if (USE_NEWIO) {
-			satFileChannel = (new FileOutputStream(satFileName)).getChannel();
-			satByteBuffer = ByteBuffer.allocateDirect(SAT_BUFFER_SIZE);
-		} else {
-			satFile = new BufferedOutputStream(new FileOutputStream(satFileName));
-			satStringBuffer = new StringBuilder(SAT_BUFFER_SIZE);
-			satByteArray = new byte[SAT_BUFFER_SIZE];
-		}
-		write(getHeader(0, 0));
-		satVariablesCount = 0;
-		satClausesCount = 0;
-		for (IntegerVariable v : csp.getIntegerVariables()) {
-			v.setCode(satVariablesCount + 1);
-			int size = v.getSatVariablesSize();
-			satVariablesCount += size;
-		}
-		for (BooleanVariable v : csp.getBooleanVariables()) {
-			v.setCode(satVariablesCount + 1);
-			int size = v.getSatVariablesSize();
-			satVariablesCount += size;
-		}
-		int count = 0;
-		int n = csp.getIntegerVariables().size();
-		int percent = 10;
-		for (IntegerVariable v : csp.getIntegerVariables()) {
-			v.encode(this);
-			count++;
-			if ((100*count)/n >= percent) {
-				Logger.fine(count + " (" + percent + "%) "
-						+ "CSP integer variables are encoded"
-						+ " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
-				percent += 10;
-			}
-			if (satFileSize >= MAX_SAT_SIZE) {
-				throw new SugarException("Too large " + satFileName);
-			}
-		}
-		count = 0;
-		n = csp.getClauses().size();
-		percent = 10;
-		for (Clause c : csp.getClauses()) {
-			int satClausesCount0 = satClausesCount;
-			if (! c.isValid()) {
-				c.encode(this);
-			}
-			count++;
-			if (SugarMain.debug >= 1) {
-				int k = satClausesCount - satClausesCount0;
-				Logger.fine(k + " SAT clauses for " + c);
-			}
-			if ((100*count)/n >= percent) {
-				Logger.fine(count + " (" + percent + "%) "
-						+ "CSP clauses are encoded"
-						+ " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
-				percent += 10;
-			}
-			if (satFileSize >= MAX_SAT_SIZE) {
-				throw new SugarException("Too large " + satFileName);
-			}
-		}
+    public void encode(String satFileName, boolean incremental) throws SugarException, IOException {
+        this.satFileName = satFileName;
+        satFileSize = 0;
+        if (USE_NEWIO) {
+            satFileChannel = (new FileOutputStream(satFileName)).getChannel();
+            satByteBuffer = ByteBuffer.allocateDirect(SAT_BUFFER_SIZE);
+        } else {
+            satFile = new BufferedOutputStream(new FileOutputStream(satFileName));
+            satStringBuffer = new StringBuilder(SAT_BUFFER_SIZE);
+            satByteArray = new byte[SAT_BUFFER_SIZE];
+        }
+        write(getHeader(0, 0));
+        satVariablesCount = 0;
+        satClausesCount = 0;
+        for (IntegerVariable v : csp.getIntegerVariables()) {
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        for (BooleanVariable v : csp.getBooleanVariables()) {
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        int count = 0;
+        int n = csp.getIntegerVariables().size();
+        int percent = 10;
+        for (IntegerVariable v : csp.getIntegerVariables()) {
+            v.encode(this);
+            count++;
+            if ((100*count)/n >= percent) {
+                Logger.fine(count + " (" + percent + "%) "
+                        + "CSP integer variables are encoded"
+                        + " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
+                percent += 10;
+            }
+            if (satFileSize >= MAX_SAT_SIZE) {
+                throw new SugarException("Too large " + satFileName);
+            }
+        }
+        count = 0;
+        n = csp.getClauses().size();
+        percent = 10;
+        for (Clause c : csp.getClauses()) {
+            int satClausesCount0 = satClausesCount;
+            if (! c.isValid()) {
+                c.encode(this);
+            }
+            count++;
+            if (SugarMain.debug >= 1) {
+                int k = satClausesCount - satClausesCount0;
+                Logger.fine(k + " SAT clauses for " + c);
+            }
+            if ((100*count)/n >= percent) {
+                Logger.fine(count + " (" + percent + "%) "
+                        + "CSP clauses are encoded"
+                        + " (" + satClausesCount + " clauses, " + satFileSize + " bytes)");
+                percent += 10;
+            }
+            if (satFileSize >= MAX_SAT_SIZE) {
+                throw new SugarException("Too large " + satFileName);
+            }
+        }
+        flush();
+        if (USE_NEWIO) {
+            satFileChannel.close();
+            satFileChannel = null;
+            satByteBuffer = null;
+        } else {
+            satFile.close();
+            satStringBuffer = null;
+            satByteArray = null;
+        }
+        Logger.fine(count + " CSP clauses encoded");
+        RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
+        satFile1.seek(0);
+        if (csp.getObjectiveVariable() == null || incremental) {
+            satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
+        } else {
+            satFile1.write(getHeader(satVariablesCount, satClausesCount + 1).getBytes());
+        }
+        satFile1.close();
+//      satFileSize = (new File(satFileName)).length();
+    }
+
+	public void encodeDelta() throws IOException, SugarException {
+        satVariablesCount = satVariablesCountSave;
+        satClausesCount = satClausesCountSave;
+        satFileSize = satFileSizeSave;
+        if (USE_NEWIO) {
+            satFileChannel = (new RandomAccessFile(satFileName, "rw")).getChannel();
+            satByteBuffer = ByteBuffer.allocateDirect(SAT_BUFFER_SIZE);
+            satFileChannel.position(satFileSize);
+        } else {
+            throw new SugarException("Internal Error");
+        }
+        for (IntegerVariable v : csp.getIntegerVariablesDelta()) { 
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        for (BooleanVariable v : csp.getBooleanVariablesDelta()) { 
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        for (IntegerVariable v : csp.getIntegerVariablesDelta()) { 
+            v.encode(this);
+        }
+        for (Clause c : csp.getClausesDelta()) {
+            if (! c.isValid()) {
+                c.encode(this);
+            }
+        }
 		flush();
-		if (USE_NEWIO) {
-			satFileChannel.close();
-			satFileChannel = null;
-			satByteBuffer = null;
-		} else {
-			satFile.close();
-			satStringBuffer = null;
-			satByteArray = null;
-		}
-		Logger.fine(count + " CSP clauses encoded");
-		RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
-		satFile1.seek(0);
-		if (csp.getObjectiveVariable() == null || incremental) {
-			satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
-		} else {
-			satFile1.write(getHeader(satVariablesCount, satClausesCount + 1).getBytes());
-		}
-		satFile1.close();
-//		satFileSize = (new File(satFileName)).length();
+        RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
+        satFile1.seek(0);
+        satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
+        satFile1.close();
 	}
 
-	public void modifySat(String satFileName, int[][] clauses) throws IOException {
-		RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
-		satFile1.seek(satFileSize);
+	/*
+	public void modifySat(int[][] clauses) throws IOException {
+        RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
+        satFile1.seek(satFileSize);
 		for (int[] clause : clauses) {
 			for (int code : clause) {
 				satFile1.write(Integer.toString(code).getBytes());
@@ -264,16 +330,17 @@ public class Encoder {
 			satFile1.write('0');
 			satFile1.write('\n');
 		}
-		satFile1.seek(0);
-		int n = clauses.length;
-		satFile1.write(getHeader(satVariablesCount, satClausesCount+n).getBytes());
-		satFile1.close();
+        satFile1.seek(0);
+        int n = clauses.length;
+        satFile1.write(getHeader(satVariablesCount, satClausesCount+n).getBytes());
+        satFile1.close();
 	}
 	
-	public void modifySat(String satFileName, int[] clause) throws IOException {
+	public void modifySat(int[] clause) throws IOException {
 		int[][] clauses = { clause };
-		modifySat(satFileName, clauses);
+		modifySat(clauses);
 	}
+	*/
 
 	public void outputMap(String mapFileName) throws SugarException, IOException {
 		BufferedWriter mapWriter = new BufferedWriter(
@@ -351,59 +418,54 @@ public class Encoder {
 	*/
 
 	public boolean decode(String outFileName) throws SugarException, IOException {
-		String result = null;
-		boolean sat = false;
 		BufferedReader rd = new BufferedReader(new FileReader(outFileName));
 		StreamTokenizer st = new StreamTokenizer(rd);
 		st.eolIsSignificant(true);
-		while (result == null) {
-			st.nextToken();
-			if (st.ttype == StreamTokenizer.TT_WORD) {
-				if (st.sval.equals("c")) {
-					do {
-						st.nextToken();
-					} while (st.ttype != StreamTokenizer.TT_EOL);
-				} else if (st.sval.equals("s")) {
-					st.nextToken();
-					result = st.sval;
-				} else {
-					result = st.sval;
-				}
-			} else {
-				throw new SugarException("Unknown output " + st.sval);
-			}
-		} 
+        String result = null;
+        boolean sat = false;
+        BitSet satValues = new BitSet();
+        while (true) {
+            st.nextToken();
+            if (st.ttype == StreamTokenizer.TT_EOF)
+                break;
+            switch (st.ttype) {
+            case StreamTokenizer.TT_EOL:
+                break;
+            case StreamTokenizer.TT_WORD:
+                if (st.sval.equals("s")) {
+                    st.nextToken();
+                    result = st.sval;
+                } else if (st.sval.equals("c")) {
+                    do {
+                        st.nextToken();
+                    } while (st.ttype != StreamTokenizer.TT_EOL);
+                } else if (st.sval.equals("v")) {
+                    do {
+                        st.nextToken();
+                        int value = (int)st.nval;
+                        int i = Math.abs(value);
+                        if (i > 0) {
+                            satValues.set(i, value > 0);
+                        }
+                    } while (st.ttype != StreamTokenizer.TT_EOL);
+                } else {
+                    result = st.sval;
+                }
+                break;
+            case StreamTokenizer.TT_NUMBER:
+                int value = (int)st.nval;
+                int i = Math.abs(value);
+                if (i > 0) {
+                    satValues.set(i, value > 0);
+                }
+                break;
+            default:
+                // throw new SugarException("Unknown output " + st.sval);
+            }
+        }
+        rd.close();
 		if (result.startsWith("SAT")) {
 			sat = true;
-			BitSet satValues = new BitSet();
-			while (true) {
-				st.nextToken();
-				if (st.ttype == StreamTokenizer.TT_EOF)
-					break;
-				switch (st.ttype) {
-				case StreamTokenizer.TT_EOL:
-					break;
-				case StreamTokenizer.TT_WORD:
-					if (st.sval.equals("v")) {
-					} else if (st.sval.equals("c")) {
-						do {
-							st.nextToken();
-						} while (st.ttype != StreamTokenizer.TT_EOL);
-					} else {
-						throw new SugarException("Unknown output " + st.sval);
-					}
-					break;
-				case StreamTokenizer.TT_NUMBER:
-					int value = (int)st.nval;
-					int i = Math.abs(value);
-					if (i > 0) {
-						satValues.set(i, value > 0);
-					}
-					break;
-				default:
-					throw new SugarException("Unknown output " + st.sval);
-				}
-			}
 			for (IntegerVariable v : csp.getIntegerVariables()) {
 				v.decode(satValues);
 			}
@@ -415,7 +477,6 @@ public class Encoder {
 		} else {
 			throw new SugarException("Unknown output result " + result);
 		}
-		rd.close();
 		return sat;
 	}
 

@@ -110,7 +110,9 @@ public class SugarMain {
 			csp.propagate();
 			Logger.fine("CSP : " + csp.summary());
 		}
-		// csp.output(System.out, "c ");
+        if (debug > 0) {
+            csp.output(System.out, "c ");
+        }
 		Logger.status();
 		if (csp.isUnsatisfiable()) {
 			Logger.info("CSP is unsatisfiable after propagation");

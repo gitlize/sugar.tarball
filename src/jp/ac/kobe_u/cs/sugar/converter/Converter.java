@@ -161,9 +161,11 @@ public class Converter {
 		if (domain == null) {
 			throw new SugarException("Unknown domain " + seq);
 		}
+		/*
 		if (intMap.containsKey(name)) {
 			throw new SugarException("Duplicated definition " + seq);
 		}
+		*/
 		IntegerVariable v = new IntegerVariable(name, domain);
 		csp.add(v);
 		intMap.put(name, v);
@@ -176,9 +178,11 @@ public class Converter {
 		} else {
 			throw new SugarException("Bad definition " + seq);
 		}
+		/*
 		if (boolMap.containsKey(name)) {
 			throw new SugarException("Duplicated definition " + seq);
 		}
+		*/
 		BooleanVariable v = new BooleanVariable(name);
 		csp.add(v);
 		boolMap.put(name, v);
@@ -1085,27 +1089,27 @@ public class Converter {
 					clauses = convertComparison(seq.get(2).sub(seq.get(1))
 							.add(Expression.create(1)));
 					break;
-				} else if (seq.isSequence(Expression.ALLDIFFERENT) && ! negative) {
+				} else if (seq.isSequence(Expression.ALLDIFFERENT)) {
 					x = GlobalConstraints.convertAllDifferent(this, seq);
-				} else if (seq.isSequence(Expression.WEIGHTEDSUM) && ! negative) {
+				} else if (seq.isSequence(Expression.WEIGHTEDSUM)) {
 					x = GlobalConstraints.convertWeightedSum(this, seq);
-				} else if (seq.isSequence(Expression.CUMULATIVE) && ! negative) {
+				} else if (seq.isSequence(Expression.CUMULATIVE)) {
 					x = GlobalConstraints.convertCumulative(this, seq);
-				} else if (seq.isSequence(Expression.ELEMENT) && ! negative) {
+				} else if (seq.isSequence(Expression.ELEMENT)) {
 					x = GlobalConstraints.convertElement(this, seq);
-				} else if (seq.isSequence(Expression.DISJUNCTIVE) && ! negative) {
+				} else if (seq.isSequence(Expression.DISJUNCTIVE)) {
 					x = GlobalConstraints.convertDisjunctive(this, seq);
-				} else if (seq.isSequence(Expression.LEX_LESS) && ! negative) {
+				} else if (seq.isSequence(Expression.LEX_LESS)) {
 					x = GlobalConstraints.convertLex_less(this, seq);
-				} else if (seq.isSequence(Expression.LEX_LESSEQ) && ! negative) {
+				} else if (seq.isSequence(Expression.LEX_LESSEQ)) {
 					x = GlobalConstraints.convertLex_lesseq(this, seq);
-				} else if (seq.isSequence(Expression.NVALUE) && ! negative) {
+				} else if (seq.isSequence(Expression.NVALUE)) {
 					x = GlobalConstraints.convertNvalue(this, seq);
-				} else if (seq.isSequence(Expression.COUNT) && ! negative) {
+				} else if (seq.isSequence(Expression.COUNT)) {
 					x = GlobalConstraints.convertCount(this, seq);
-				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY) && ! negative) {
+				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY)) {
 					x = GlobalConstraints.convertGlobal_cardinality(this, seq);
-				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY_WITH_COSTS) && ! negative) {
+				} else if (seq.isSequence(Expression.GLOBAL_CARDINALITY_WITH_COSTS)) {
 					x = GlobalConstraints.convertGlobal_cardinality_with_costs(this, seq);
 				} else {
 					syntaxError(x);

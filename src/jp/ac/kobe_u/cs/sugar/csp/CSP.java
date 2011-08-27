@@ -32,6 +32,12 @@ public class CSP {
 
 	private Objective objective = Objective.NONE;
 
+    private int integerVariablesSizeSave = 0;
+
+    private int booleanVariablesSizeSave = 0;
+
+    private int clausesSizeSave = 0;
+	
 	/**
 	 * Objective types.
 	 */
@@ -63,6 +69,29 @@ public class CSP {
 		booleanVariableMap = new HashMap<String,BooleanVariable>();
 	}
 
+	public void commit() {
+        integerVariablesSizeSave = integerVariables.size();
+        booleanVariablesSizeSave = booleanVariables.size();
+        clausesSizeSave = clauses.size();
+	}
+	
+	public void cancel() {
+        int i = integerVariablesSizeSave;
+        while (integerVariablesSizeSave < integerVariables.size()) {
+            integerVariableMap.remove(integerVariables.get(i).getName());
+            integerVariables.remove(i);
+        }
+        i = booleanVariablesSizeSave;
+        while (booleanVariablesSizeSave < booleanVariables.size()) {
+            booleanVariableMap.remove(booleanVariables.get(i).getName());
+            booleanVariables.remove(i);
+        }
+        i = clausesSizeSave;
+        while (clausesSizeSave < clauses.size()) {
+            clauses.remove(i);
+        }
+	}
+	
 	/**
 	 * Returns the objective variable or null.
 	 * @return the objective variable or null
@@ -95,6 +124,10 @@ public class CSP {
 		return integerVariables;
 	}
 
+    public List<IntegerVariable> getIntegerVariablesDelta() {
+        return integerVariables.subList(integerVariablesSizeSave, integerVariables.size());
+    }
+    
 	/**
 	 * Returns the integer variable of the given name.
 	 * @param name the name of the integer variable
@@ -121,6 +154,10 @@ public class CSP {
 		return booleanVariables;
 	}
 
+    public List<BooleanVariable> getBooleanVariablesDelta() {
+        return booleanVariables.subList(booleanVariablesSizeSave, booleanVariables.size());
+    }
+    
 	public void add(BooleanVariable v) throws SugarException {
 		String name = v.getName();
 		if (booleanVariableMap.containsKey(name)) {
@@ -147,6 +184,10 @@ public class CSP {
 		return clauses;
 	}
 
+    public List<Clause> getClausesDelta() {
+        return clauses.subList(clausesSizeSave, clauses.size());
+    }
+    
 	/**
 	 * Adds a clause.
 	 * @param clause the clause to be added

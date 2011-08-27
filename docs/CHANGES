@@ -1,4 +1,10 @@
 ================================================================
+Changes with Sugar version 1.15
+
+* Support for Scala interface named Copris (Constraint Programming in
+  Scala) is added (see http://bach.istc.kobe-u.ac.jp/copris).
+
+================================================================
 Changes with Sugar version 1.14
 
 * UTF-8 code support for CSP files

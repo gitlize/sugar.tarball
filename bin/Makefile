@@ -1,5 +1,5 @@
-VER = v1-14-7
-VERSION = 1.14.7
+VER = v1-15-0
+VERSION = 1.15.0
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -22,7 +22,19 @@ JAVADOC  = javadoc -locale en_US \
 	-classpath ../classes -sourcepath ../src -subpackages $(PACKAGE) \
 	-public -d ../docs/api
 
-all: zip jar javadoc
+all: javac jar javadoc zip
+
+javac:
+	javac -sourcepath ../src -d ../classes \
+		../src/jp/ac/kobe_u/cs/sugar/*.java \
+		../src/jp/ac/kobe_u/cs/sugar/*/*.java
+
+jar:
+	jar cmf manifest $(JAR) -C ../classes .
+
+javadoc:
+	rm -rf ../docs/api
+	LANG=C $(JAVADOC) $(PACKAGE)
 
 zip:
 	rm -f $(ZIP)
@@ -31,16 +43,9 @@ zip:
 	cp -pr ../src ../classes ../docs ../examples ../tools $(APP)
 	mkdir $(APP)/bin
 	cp -p $(APP0) Makefile manifest $(JAR) $(APP)/bin
-	find $(APP) \( -name CVS -o -name .cvsignore -o -name '*~' \) -exec rm -r '{}' '+'
+	find $(APP) \( -name .svn -o -name CVS -o -name .cvsignore -o -name '*~' \) -exec rm -rf '{}' '+'
 	zip -q -r $(ZIP) $(APP)
 	rm -rf $(APP)
-
-jar:
-	jar cmf manifest $(JAR) -C ../classes .
-
-javadoc:
-	rm -rf ../docs/api
-	LANG=C $(JAVADOC) $(PACKAGE)
 
 install:
 	mkdir -p $(BINDIR)

@@ -10,7 +10,7 @@ use IPC::Open2;
 use strict;
 $| = 1;
 
-my $version = "v1-14-7";
+my $version = "v1-15-0";
 my $java = "java";
 my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
 my $solver0 = "minisat";
