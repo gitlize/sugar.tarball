@@ -106,6 +106,10 @@ public class XML2CSP {
 			return null;
 		return (Element)nodeList.item(0);
 	}
+	
+	private String getTextContext(Element elem) {
+	    return elem.getTextContent().replaceAll("\\s+", " ").trim();
+	}
 
 	private void output(String s) throws IOException {
 		cspFile.write(s);
@@ -120,7 +124,7 @@ public class XML2CSP {
 			Element domainElement = (Element) nodeList.item(i);
 			String name = domainElement.getAttribute(NAME);
 //			int nbValues = Integer.parseInt(domainElement.getAttribute(NB_VALUES));
-			String valuesText = domainElement.getTextContent().trim();
+			String valuesText = getTextContext(domainElement);
 			if (valuesText.matches("(-?\\d+)")) {
 				output("(domain " + name + " " + valuesText + " " + valuesText + ")");
 			} else if (valuesText.matches("(-?\\d+)\\s*\\.\\.\\s*(-?\\d+)")) {
@@ -157,9 +161,9 @@ public class XML2CSP {
 			Element parameters = getFirstElement(predicateElement, PARAMETERS);
 //			Element expression = getFirstElement(predicateElement, EXPRESSION); 
 			Element functional = getFirstElement(predicateElement, FUNCTIONAL);  
-			String formalParameters = parameters.getTextContent();
+			String formalParameters = getTextContext(parameters);
 			formalParameters = formalParameters.replaceAll("int\\s+", "");
-			String body = functional.getTextContent();
+			String body = getTextContext(functional);
 			body = body.replaceAll("(\\w+)\\(", "($1 ");
 			body = body.replaceAll("\\s*,\\s*", " ");
 			output("(predicate (" + name + " " + formalParameters + ") " + body + ")");
@@ -178,7 +182,7 @@ public class XML2CSP {
 			int arity = Integer.parseInt(relationElement.getAttribute(ARITY));
 //			int nbTuples = Integer.parseInt(relationElement	.getAttribute(NB_TUPLES));
 			String semantics = relationElement.getAttribute(SEMANTICS);
-			String tuples = relationElement.getTextContent();
+			String tuples = getTextContext(relationElement);
 			tuples = tuples.replaceAll("\\s*\\|\\s*", ") (");
 			if (! tuples.matches("\\s*")) {
 				tuples = "(" + tuples + ")";
@@ -228,7 +232,7 @@ public class XML2CSP {
 				if (parameters == null) {
 					params = scope;
 				} else {
-					params = parameters.getTextContent();
+					params = getTextContext(parameters);
 				}
 				output("(" + reference + " " + params + ") ; " + name);
 			}

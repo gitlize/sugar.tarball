@@ -273,11 +273,14 @@ public class Encoder {
         Logger.fine(count + " CSP clauses encoded");
         RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
         satFile1.seek(0);
-        if (csp.getObjectiveVariable() == null || incremental) {
+        satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
+        /*
+        if (csp.getObjectiveVariables() == null || incremental) {
             satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
         } else {
             satFile1.write(getHeader(satVariablesCount, satClausesCount + 1).getBytes());
         }
+        */
         satFile1.close();
 //      satFileSize = (new File(satFileName)).length();
     }
@@ -312,6 +315,13 @@ public class Encoder {
             }
         }
 		flush();
+        if (USE_NEWIO) {
+            satFileChannel.close();
+            satFileChannel = null;
+            satByteBuffer = null;
+        } else {
+            throw new SugarException("Internal Error");
+        }
         RandomAccessFile satFile1 = new RandomAccessFile(satFileName, "rw");
         satFile1.seek(0);
         satFile1.write(getHeader(satVariablesCount, satClausesCount).getBytes());
@@ -347,14 +357,16 @@ public class Encoder {
 				new OutputStreamWriter(new FileOutputStream(mapFileName), "UTF-8"));
 //		BufferedOutputStream mapFile =
 //			new BufferedOutputStream(new FileOutputStream(mapFileName));
-		if (csp.getObjectiveVariable() != null) {
+		if (csp.getObjectiveVariables() != null) {
 			String s = "objective ";
 			if (csp.getObjective().equals(CSP.Objective.MINIMIZE)) {
 				s += SugarConstants.MINIMIZE;
 			} else if (csp.getObjective().equals(CSP.Objective.MAXIMIZE)) {
 				s += SugarConstants.MAXIMIZE;
 			}
-			s += " " + csp.getObjectiveVariable().getName();
+			for (IntegerVariable v : csp.getObjectiveVariables()) {
+			    s += " " + v.getName();
+			}
 //			mapFile.write(s.getBytes());
 //			mapFile.write('\n');
 			mapWriter.write(s);

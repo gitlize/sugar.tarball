@@ -110,11 +110,13 @@ public abstract class Expression implements Comparable<Expression> {
 		create(SugarConstants.GLOBAL_CARDINALITY_WITH_COSTS);
 	
 	public static final Expression NIL =
-		create(SugarConstants.NIL);
+	        create(SugarConstants.NIL);
 	public static final Expression ZERO =
 		intern(new Atom(0));
 	public static final Expression ONE =
 		intern(new Atom(1));
+    public static final Expression WEIGHTED =
+        create(SugarConstants.WEIGHTED);
 	private String comment = null; 
 	
 	private static Expression intern(Expression x) {

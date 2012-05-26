@@ -1,5 +1,5 @@
-VER = v1-15-0
-VERSION = 1.15.0
+VER = v1-15-1
+VERSION = 1.15.1
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -25,7 +25,7 @@ JAVADOC  = javadoc -locale en_US \
 all: javac jar javadoc zip
 
 javac:
-	javac -sourcepath ../src -d ../classes \
+	javac -target 1.6 -sourcepath ../src -d ../classes \
 		../src/jp/ac/kobe_u/cs/sugar/*.java \
 		../src/jp/ac/kobe_u/cs/sugar/*/*.java
 
@@ -48,10 +48,12 @@ zip:
 	rm -rf $(APP)
 
 install:
-	mkdir -p $(BINDIR)
-	install $(APP0) $(BINDIR)
 	mkdir -p $(LIBDIR)
 	cp -p $(JAR) $(LIBDIR)
+	mkdir -p $(BINDIR)
+	cp -p $(APP0) $(APP)
+	install $(APP) $(BINDIR)
+	cd $(BINDIR); rm -f $(APP0); ln -s $(APP) $(APP0)
 
 clean:
 	rm -rf ../docs/api

@@ -28,7 +28,7 @@ public class CSP {
 
 	private HashMap<String,BooleanVariable> booleanVariableMap;
 
-	private IntegerVariable objectiveVariable = null;
+	private List<IntegerVariable> objectiveVariables = null;
 
 	private Objective objective = Objective.NONE;
 
@@ -63,7 +63,7 @@ public class CSP {
 		integerVariables = new ArrayList<IntegerVariable>();
 		booleanVariables = new ArrayList<BooleanVariable>();
 		clauses = new ArrayList<Clause>();
-		objectiveVariable = null;
+		objectiveVariables = null;
 		objective = Objective.NONE;
 		integerVariableMap = new HashMap<String,IntegerVariable>();
 		booleanVariableMap = new HashMap<String,BooleanVariable>();
@@ -93,15 +93,15 @@ public class CSP {
 	}
 	
 	/**
-	 * Returns the objective variable or null.
-	 * @return the objective variable or null
+	 * Returns the list of objective variables or null.
+	 * @return the list of objective variables or null
 	 */
-	public IntegerVariable getObjectiveVariable() {
-		return objectiveVariable;
+	public List<IntegerVariable> getObjectiveVariables() {
+		return objectiveVariables;
 	}
 
-	public void setObjectiveVariable(IntegerVariable objectiveVariable) {
-		this.objectiveVariable = objectiveVariable;
+	public void setObjectiveVariables(List<IntegerVariable> objectiveVariables) {
+		this.objectiveVariables = objectiveVariables;
 	}
 	
 	/**
@@ -372,15 +372,19 @@ public class CSP {
 			}
 			out.println(pre + clause.toString());
 		}
-		IntegerVariable v = getObjectiveVariable();
-		if (v != null) {
+		List<IntegerVariable> vs = getObjectiveVariables();
+		if (vs != null) {
 			String obj = "none";
 			if (objective == Objective.MINIMIZE) {
 				obj = "minimize";
 			} else if (objective == Objective.MAXIMIZE) {
 				obj = "maximize";
 			}
-			out.println(pre + "(objective " + obj + " " + v.getName() + ")");
+			out.print(pre + "(objective " + obj);
+			for (IntegerVariable v : vs) {
+			    out.print(" " + v.getName() + ")");
+			}
+			out.println();
 		}
 	}
 

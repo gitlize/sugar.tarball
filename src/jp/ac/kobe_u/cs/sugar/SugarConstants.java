@@ -5,7 +5,7 @@ package jp.ac.kobe_u.cs.sugar;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class SugarConstants {
-	public static final String DOMAIN_DEFINITION = "domain"; 
+    public static final String DOMAIN_DEFINITION = "domain"; 
 	public static final String INT_DEFINITION = "int"; 
 	public static final String BOOL_DEFINITION = "bool"; 
 	public static final String PREDICATE_DEFINITION = "predicate"; 
@@ -52,4 +52,5 @@ public class SugarConstants {
 	public static final String GLOBAL_CARDINALITY = "global_cardinality";
 	public static final String GLOBAL_CARDINALITY_WITH_COSTS = "global_cardinality_with_costs";
 	public static final String NIL = "nil";
+    public static final String WEIGHTED = "weighted"; 
 }

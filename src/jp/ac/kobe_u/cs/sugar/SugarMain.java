@@ -21,6 +21,7 @@ import jp.ac.kobe_u.cs.sugar.csp.LinearSum;
 import jp.ac.kobe_u.cs.sugar.encoder.Encoder;
 import jp.ac.kobe_u.cs.sugar.expression.Expression;
 import jp.ac.kobe_u.cs.sugar.expression.Parser;
+import jp.ac.kobe_u.cs.sugar.expression.Sequence;
 
 /**
  * SugarMain main class.
@@ -28,6 +29,7 @@ import jp.ac.kobe_u.cs.sugar.expression.Parser;
  */
 public class SugarMain {
 	boolean maxCSP = false;
+	boolean weightedCSP = false;
 	boolean competition = false;
 	boolean incremental = false;
 	boolean propagate = true;
@@ -45,7 +47,7 @@ public class SugarMain {
 				|| x.isSequence(Expression.PREDICATE_DEFINITION)
 				|| x.isSequence(Expression.RELATION_DEFINITION)) {
 				expressions.add(x);
-			} else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)){
+			} else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
 				throw new SugarException("Illegal " + x);
 			} else {
 				// (int _Cn 0 1)
@@ -80,6 +82,57 @@ public class SugarMain {
 		return expressions;
 	}
 	
+    private List<Expression> toWeightedCSP(List<Expression> expressions0) throws SugarException {
+        List<Expression> expressions = new ArrayList<Expression>();
+        List<Expression> sum = new ArrayList<Expression>();
+        sum.add(Expression.ADD);
+        int n = 0;
+        int maxWeight = 0;
+        for (Expression x: expressions0) {
+            if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
+                throw new SugarException("Illegal " + x);
+            } else if (x.isSequence(Expression.WEIGHTED)) {
+                Sequence seq = (Sequence)x;
+                if (! seq.matches("WI.")) {
+                    throw new SugarException("Bad definition " + seq);
+                }
+                int weight = seq.get(1).integerValue();
+                x = seq.get(2);
+                // (int _Cn 0 1)
+                // (or (ge _Cn 1) constraint)
+                Expression c = Expression.create("_C" + n);
+                expressions.add(Expression.create(
+                        Expression.INT_DEFINITION,
+                        c,
+                        Expression.ZERO,
+                        Expression.ONE));
+                x = (c.ge(Expression.ONE)).or(x);
+                expressions.add(x);
+                sum.add(c.mul(weight));
+                maxWeight += weight;
+                n++;
+            } else {
+                expressions.add(x);
+            }
+        }
+        // (int _COST 0 maxWeight)
+        // (ge _COST (add (* _C1 W1) ... (* _Cn Wn)))
+        // (objective minimize _COST)
+        Expression cost = Expression.create("_COST");
+        expressions.add(Expression.create(
+                Expression.INT_DEFINITION,
+                cost,
+                Expression.ZERO,
+                Expression.create(maxWeight)));
+        expressions.add(cost.ge(Expression.create(sum)));
+        expressions.add(Expression.create(
+                Expression.OBJECTIVE_DEFINITION,
+                Expression.MINIMIZE,
+                cost));
+        Logger.info("Weighted CSP: " + n + " constraints");
+        return expressions;
+    }
+    
 	public void encode(String cspFileName, String satFileName, String mapFileName)
 	throws SugarException, IOException {
 		Logger.fine("Parsing " + cspFileName);
@@ -94,8 +147,10 @@ public class SugarMain {
 		List<Expression> expressions = parser.parse();
 		Logger.info("parsed " + expressions.size() + " expressions");
 		Logger.status();
-		if (maxCSP) {
-			expressions = toMaxCSP(expressions);
+        if (maxCSP) {
+            expressions = toMaxCSP(expressions);
+        } else if (weightedCSP) {
+            expressions = toWeightedCSP(expressions);
 		}
 		Logger.fine("Converting to clausal form CSP");
 		CSP csp = new CSP();
@@ -160,7 +215,7 @@ public class SugarMain {
 	throws SugarException, IOException {
 		Logger.fine("Decoding " + outFileName);
 		CSP csp = new CSP();
-		String objectiveVariableName = null;
+		List<String> objectiveVariableNames = null;
 		BufferedReader rd = new BufferedReader(
 				new InputStreamReader(new FileInputStream(mapFileName), "UTF-8"));
 		while (true) {
@@ -174,7 +229,9 @@ public class SugarMain {
 				} else if (s[1].equals(SugarConstants.MAXIMIZE)) {
 					csp.setObjective(CSP.Objective.MAXIMIZE);
 				}
-				objectiveVariableName = s[2];
+				objectiveVariableNames = new ArrayList<String>();
+				for (int i = 2; i < s.length; i++)
+				    objectiveVariableNames.add(s[i]);
 			} else if (s[0].equals("int")) {
 				String name = s[1];
 				int code = Integer.parseInt(s[2]);
@@ -211,9 +268,6 @@ public class SugarMain {
 				IntegerVariable v = new IntegerVariable(name, domain);
 				v.setCode(code);
 				csp.add(v);
-				if (name.equals(objectiveVariableName)) {
-					csp.setObjectiveVariable(v);
-				}
 			} else if (s[0].equals("bool")) {
 				// TODO
 				String name = s[1];
@@ -224,15 +278,29 @@ public class SugarMain {
 			}
 		}
 		rd.close();
+		if (objectiveVariableNames != null) {
+		    List<IntegerVariable> vs = new ArrayList<IntegerVariable>();
+		    for (String name : objectiveVariableNames) {
+		        IntegerVariable v = csp.getIntegerVariable(name);
+		        if (v == null)
+		            throw new SugarException("Unknown objective variable " + name);
+		        vs.add(v);
+		    }
+		    csp.setObjectiveVariables(vs);
+		}
 		Encoder encoder = new Encoder(csp);
 		if (encoder.decode(outFileName)) {
-			if (csp.getObjectiveVariable() == null) {
+			if (csp.getObjectiveVariables() == null) {
 				Logger.println("s SATISFIABLE");
 			} else {
-				String name = csp.getObjectiveVariable().getName();
-				int value = csp.getObjectiveVariable().getValue();
-				Logger.println("c OBJECTIVE " + name + " " + value);
-				Logger.println("o " + value);
+			    String s = "o";
+			    for (IntegerVariable v : csp.getObjectiveVariables()) {
+			        String name = v.getName();
+			        int value = v.getValue();
+			        Logger.println("c OBJECTIVE " + name + " " + value);
+			        s += " " + value;
+			    }
+				Logger.println(s);
 			}
 			if (competition) {
 				Logger.print("v");
@@ -270,9 +338,11 @@ public class SugarMain {
 			int i = 0;
 			while (i < args.length) {
 				if (args[i].equals("-max")) {
-					sugarMain.maxCSP = true;
-				} else if (args[i].equals("-competition")) {
-					sugarMain.competition = true;
+                    sugarMain.maxCSP = true;
+				} else if (args[i].equals("-weighted")) {
+                    sugarMain.weightedCSP = true;
+                } else if (args[i].equals("-competition")) {
+                    sugarMain.competition = true;
 				} else if (args[i].equals("-incremental")) {
 					sugarMain.incremental = true;
 				} else if (args[i].equals("-option") && i + 1 < args.length) {

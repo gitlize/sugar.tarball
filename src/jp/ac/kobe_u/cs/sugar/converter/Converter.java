@@ -190,23 +190,27 @@ public class Converter {
 
 	private void convertObjectiveDefinition(Sequence seq) throws SugarException {
 		Objective objective = null;
-		String name = null;
-		if (seq.matches("WWW")) {
+		if (seq.matches("WWW*")) {
 			if (seq.get(1).equals(Expression.MINIMIZE)) {
 				objective = Objective.MINIMIZE;
 			} else if (seq.get(1).equals(Expression.MAXIMIZE)) {
 				objective = Objective.MAXIMIZE;
 			}
-			name = seq.get(2).stringValue();
 		}
-		if (objective == null || name == null) {
-			throw new SugarException("Bad definition " + seq);
+		if (objective == null) {
+            throw new SugarException("Bad definition " + seq);
 		}
-		IntegerVariable v = intMap.get(name);
-		if (v == null) {
-			throw new SugarException("Unknown objective variable " + seq);
+		List<IntegerVariable> vs = new ArrayList<IntegerVariable>();
+		for (int i = 2; i < seq.length(); i++) {
+		    String name = seq.get(i).stringValue();
+		    if (name == null)
+	            throw new SugarException("Bad definition " + seq);
+	        IntegerVariable v = intMap.get(name);
+	        if (v == null)
+	            throw new SugarException("Unknown objective variable " + name);
+	        vs.add(v);
 		}
-		csp.setObjectiveVariable(v);
+		csp.setObjectiveVariables(vs);
 		csp.setObjective(objective);
 	}
 

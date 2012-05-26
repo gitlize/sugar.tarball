@@ -47,7 +47,7 @@ sub read_jss {
     @j_p = ();
     foreach my $i (0.. $jobs-1) {
 	chomp($_ = <IN>);
-	split;
+	@_ = split;
 	$j_m[$i] = [];
 	$j_p[$i] = [];
 	foreach my $j (0.. $machines-1) {
