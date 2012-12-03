@@ -1,5 +1,5 @@
 ================================================================
-README for Sugar version 1.15
+README for Sugar version 2
 
 Sugar: A SAT-based Constraint Solver
 
@@ -23,14 +23,11 @@ the Job-shop scheduling problems to the finite-domain linear CSP
 ================
 REQUIREMENTS
 
-* Java J2SE 5 or 6
+* Java J2SE 6 or higher
 
-* Perl version 5
+* Perl version 5 or higher
 
 * A SAT Solver
-  - MiniSat version 1.4 or 2 (http://minisat.se/)
-  - PicoSAT version 535 (http://fmv.jku.at/picosat/)
-  - or any other SAT solver
 
 ================
 INSTALLATION
@@ -41,7 +38,7 @@ INSTALLATION
   execution environment.
 
   - $java   : Java command path
-  - $jar    : Full path of the sugar-v1-15.jar file in the same directory
+  - $jar    : Full path of the sugar-v2-0-0.jar file in the same directory
   - $solver : Path of the SAT solver (e.g. MiniSat)
   - $tmp    : Path prefix for temporally created files
 
@@ -80,11 +77,11 @@ way.
 
 * XCSP to CSP conversion
 
-  $ java -cp sugar-v1-15.jar jp.ac.kobe_u.cs.sugar.XML2CSP file.xml file.csp
+  $ java -cp sugar-v1-16-0.jar jp.kobe_u.sugar.XML2CSP file.xml file.csp
 
 * Encoding CSP to SAT
 
-  $ java -jar sugar-v1-15.jar -encode file.csp file.cnf file.map
+  $ java -jar sugar-v2-0-0.jar -encode file.csp file.cnf file.map
 
 * Solving SAT
 
@@ -92,7 +89,7 @@ way.
 
 * Decoding SAT output
 
-  $ java -jar sugar-v1-15.jar [-competition] -decode file.out file.map
+  $ java -jar sugar-v2-0-0.jar [-competition] -decode file.out file.map
 
 ================
 LIMITATIONS AND KNOWN BUGS
@@ -107,6 +104,10 @@ LIMITATIONS AND KNOWN BUGS
        The size of generated SAT file is proportional to the square of
   the domain size in most of the cases.  A very large SAT file (e.g. 
   1GB) might not be solved by most of the SAT solvers.
+
+* If you have enough memory, please try to use jopt1 and jopt2 options.
+
+  $ sugar -jopt1 '-Xmx1500M -Xms1000M -XX:-UseGCOverheadLimit' -jopt2 '-Xmx1000M' input.csp
 
 ================
 PUBLICATIONS

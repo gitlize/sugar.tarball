@@ -1,11 +1,25 @@
 ================================================================
-Changes with Sugar version 1.15
+Changes in Sugar version 2.0
 
-* Support for Scala interface named Copris (Constraint Programming in
-  Scala) is added (see http://bach.istc.kobe-u.ac.jp/copris).
+* Package name space is changed to jp.kobe_u.sugar from jp.ac.kobe_u.cs.sugar.
+
+* Refactoring code of the Converter program
+
+* Refactoring code of the Encoder program
+
+* CSP-to-CSP translation mode is added
+  See http://bach.istc.kobe-u.ac.jp/sugar/docs/translator.html
+
+* Bug fix for negative relations
 
 ================================================================
-Changes with Sugar version 1.14
+Changes in Sugar version 1.15
+
+* Support for Scala interface named Copris (Constraint Programming in
+  Scala) is added (see http://bach.istc.kobe-u.ac.jp/copris/).
+
+================================================================
+Changes in Sugar version 1.14
 
 * UTF-8 code support for CSP files
 
@@ -30,7 +44,7 @@ Changes with Sugar version 1.14
     new variables
 
 ================================================================
-Changes with Sugar version 1.13
+Changes in Sugar version 1.13
 
 * Global constraint "allDifferent" is renamed to "alldifferent".
 

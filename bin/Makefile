@@ -1,5 +1,5 @@
-VER = v1-15-1
-VERSION = 1.15.1
+VER = v2-0-0
+VERSION = 2.0.0
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -11,7 +11,7 @@ ZIP = $(APP).zip
 
 WEBPAGE = http://bach.istc.kobe-u.ac.jp/sugar/
 WEBTITLE = Sugar: A SAT-based Constraint Solver
-PACKAGE = jp.ac.kobe_u.cs.sugar
+PACKAGE = jp.kobe_u.sugar
 
 DOCTITLE = Sugar version $(VERSION) Core API Specification
 JAVADOC  = javadoc -locale en_US \
@@ -26,15 +26,15 @@ all: javac jar javadoc zip
 
 javac:
 	javac -target 1.6 -sourcepath ../src -d ../classes \
-		../src/jp/ac/kobe_u/cs/sugar/*.java \
-		../src/jp/ac/kobe_u/cs/sugar/*/*.java
+		../src/jp/kobe_u/sugar/*.java \
+		../src/jp/kobe_u/sugar/*/*.java
 
 jar:
 	jar cmf manifest $(JAR) -C ../classes .
 
 javadoc:
 	rm -rf ../docs/api
-	LANG=C $(JAVADOC) $(PACKAGE)
+	LC_ALL=C LANG=C $(JAVADOC) $(PACKAGE)
 
 zip:
 	rm -f $(ZIP)

@@ -10,7 +10,7 @@ use IPC::Open2;
 use strict;
 $| = 1;
 
-my $version = "v1-15-1";
+my $version = "v2-0-0";
 my $java = "java";
 my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
 my $solver0 = "minisat";
@@ -18,6 +18,7 @@ my $solver0_inc = "minisat-inc";
 my $tmp = "/tmp/sugar$$";
 
 my ($showversion, $help, $debug, $verbose, $veryverbose, $option);
+my ($no_solve, $translate, $output, $prolog, $conversionHooks, $outputHook);
 my ($java_opt1, $java_opt2, $solver, $competition, $keep, $incremental, $prof);
 my ($max_csp, $weighted_csp, $csp_file, $map_file, $sat_file, $out_file);
 my ($memlimit, $timelimit, $solverlimit);
@@ -30,6 +31,12 @@ my ($memlimit, $timelimit, $solverlimit);
 	    'c|competition' => \$competition,
 	    'i|incremental' => \$incremental,
 	    'o|option=s' => \$option,
+	    'n|no_solve' => \$no_solve,
+            'prolog' => \$prolog,
+	    'translate=s' => \$translate,
+            'conversionHooks=s' => \$conversionHooks,
+	    'output=s' => \$output,
+            'outputHook=s' => \$outputHook,
 	    'max' => \$max_csp,
 	    'weighted' => \$weighted_csp,
 	    'tmp=s' => \$tmp,
@@ -93,29 +100,35 @@ exit 0;
 
 sub usage {
     print "Usage: $0 [options] csp_file\n";
-    print "\t-h -help         : show help\n";
-    print "\t-debug level     : debug option\n";
-    print "\t-v -verbose      : verbose output\n";
-    print "\t-vv -veryverbose : verbose output\n";
-    print "\t-c -competition  : CSP Solver Competition mode\n";
-#    print "\t-i -incremental  : use incremental search (you need a patched SAT solver)\n";
-    print "\t-o -option o1,.. : set options (e.g. -pigeon)\n";
-    print "\t-max             : MAX-CSP mode\n";
-    print "\t-weighted        : Weighted-CSP mode (experimental)\n";
-    print "\t-tmp prefix      : path and prefix of temporay files\n";
-    print "\t-csp file        : output CSP file name for XCSP input\n";
-    print "\t-sat file        : SAT problem file name\n";
-    print "\t-map file        : mapping file name\n";
-    print "\t-out file        : SAT solver output file name\n";
-    print "\t-java command    : java command (default: $java)\n";
-    print "\t-jopt1 option    : java option for encoding\n";
-    print "\t-jopt2 option    : java option for decoding\n";
-    print "\t-jar file        : jar file name to be used (default: $jar)\n";
-    print "\t-prof file       : java CPU profiling\n";
-    print "\t-solver command  : SAT solver command (default: $solver0)\n";
-    print "\t-keep            : do not erase temporary files\n";
-    print "\t-memlimit MiB    : memory limit in MiB (for CSP solver competition)\n";
+    print "\t-h -help          : show help\n";
+    print "\t-v -verbose       : verbose output\n";
+    print "\t-vv -veryverbose  : very verbose output\n";
+    print "\t-c -competition   : CSP Solver Competition mode\n";
+#    print "\t-i -incremental   : use incremental search (you need a patched SAT solver)\n";
+    print "\t-o -option o1,... : set options\n";
+    print "\t-n -no_solve      : only generate SAT instance\n";
+    print "\t-prolog           : Prolog style input\n";
+    print "\t-max              : Max-CSP mode\n";
+    print "\t-weighted         : Weighted-CSP mode (experimental)\n";
+    print "\t-translate format : translate CSP by format (csp, prolog, asp) (experimental)\n";
+    print "\t-conversionHooks class1,... : set conversion hooks (experimental)\n";
+    print "\t-output file      : output file name of the translation (experimental)\n";
+    print "\t-outputHook class : set output hook (experimental)\n";
+    print "\t-tmp prefix       : path and prefix of temporay files\n";
+    print "\t-csp file         : output CSP file name for XCSP input\n";
+    print "\t-sat file         : SAT instance file name\n";
+    print "\t-map file         : mapping file name\n";
+    print "\t-out file         : SAT solver output file name\n";
+    print "\t-java command     : java command (default: $java)\n";
+    print "\t-jopt1 option     : java option for encoding/translation\n";
+    print "\t-jopt2 option     : java option for decoding\n";
+    print "\t-jar file         : jar file name to be used (default: $jar)\n";
+    print "\t-prof file        : java CPU profiling\n";
+    print "\t-solver command   : SAT solver command (default: $solver0)\n";
+    print "\t-keep             : do not erase temporary files\n";
+    print "\t-memlimit MiB     : memory limit in MiB (for CSP solver competition)\n";
 #    print "\t-timelimit sec   : time limit in seconds (reserved for CSP solver competition)\n";
+    print "\t-debug level      : debug option\n";
     exit(1);
 }
 
@@ -287,9 +300,16 @@ sub main {
 	    }
 	}
 	if (-e $csp_file) {
-	    &encode($csp_file, $sat_file, $map_file);
-	    if (! $result) {
-		&solve($sat_file, $out_file, $map_file);
+	    if ($translate) {
+		&translate($translate, $csp_file, $output);
+		$result = "DONE";
+	    } else {
+		&encode($csp_file, $sat_file, $map_file);
+		if ($no_solve) {
+		    $result = "DONE";
+		} elsif (! $result) {
+		    &solve($sat_file, $out_file, $map_file);
+		}
 	    }
 	} else {
 	    &error("$csp_file not found");
@@ -322,9 +342,40 @@ sub convert {
     if (! -e $xml_file) {
 	&error("no XML file $xml_file");
     } else {
-	my $class = "jp.ac.kobe_u.cs.sugar.XML2CSP";
+	my $class = "jp.kobe_u.sugar.XML2CSP";
 	&java($java_opt1, $class, "'$xml_file' '$csp_file'");
     }
+}
+
+sub translate {
+    my ($format, $csp_file, $output_file) = @_;
+    my @t0 = times;
+    &log("TRANSLATE $csp_file TO $output_file by $format");
+    if (! -e $csp_file) {
+	&error("no CSP file $csp_file");
+    } else {
+	my $class = "jp.kobe_u.sugar.SugarMain";
+	my $arg = $competition ? "-competition" : "";
+	if ($max_csp) {
+	    $arg .= " -max";
+	} elsif ($weighted_csp) {
+	    $arg .= " -weighted";
+	}
+	$arg .= " -prolog" if $prolog;
+	$arg .= " -conversionHooks '$conversionHooks'" if $conversionHooks;
+	$arg .= " -outputHook '$outputHook'" if $outputHook;
+	if ($output_file) {
+	    $arg .= " -to $format '$output_file' '$csp_file'";
+	} else {
+	    $arg .= " -to $format - '$csp_file'";
+	}
+	&java($java_opt1, $class, $arg, $prof);
+    }
+    my @t = times;
+    @t = ($t[0]-$t0[0], $t[1]-$t0[1], $t[2]-$t0[2], $t[3]-$t0[3]);
+    my $cpu = $t[0] + $t[1] + $t[2] + $t[3];
+    $_ = "(" . join(" ", @t) . ")";
+    &log("TRANSLATE CPU", $cpu, $_);
 }
 
 sub encode {
@@ -334,16 +385,16 @@ sub encode {
     if (! -e $csp_file) {
 	&error("no CSP file $csp_file");
     } else {
-	my $class = "jp.ac.kobe_u.cs.sugar.SugarMain";
+	my $class = "jp.kobe_u.sugar.SugarMain";
 	my $arg = $competition ? "-competition" : "";
 	if ($max_csp) {
 	    $arg .= " -max";
 	} elsif ($weighted_csp) {
 	    $arg .= " -weighted";
 	}
-	if ($incremental) {
-	    $arg .= " -incremental";
-	}
+	$arg .= " -prolog" if $prolog;
+	$arg .= " -conversionHooks '$conversionHooks'" if $conversionHooks;
+	$arg .= " -incremental" if $incremental;
 	$arg .= " -encode '$csp_file' '$sat_file' '$map_file'";
 	&java($java_opt1, $class, $arg, $prof);
     }
@@ -366,7 +417,7 @@ sub decode {
 	&error("no map file $map_file");
 	return;
     }
-    my $class = "jp.ac.kobe_u.cs.sugar.SugarMain";
+    my $class = "jp.kobe_u.sugar.SugarMain";
     my $arg = $competition ? "-competition " : "";
     $arg .= "-decode '$out_file' '$map_file'";
     &java($java_opt2, $class, $arg);
@@ -603,7 +654,7 @@ sub sat {
     }
     unlink $out_file;
     my $cmd = "$solver '$sat_file'";
-    if ($solver =~ /\b(minisat|glueminisat)/) {
+    if ($solver =~ /\b(minisat|glueminisat|sucrose)/) {
 	$cmd = "$solver '$sat_file' '$out_file'";
 	$out_file = undef;
     } elsif ($solver =~ /\b(picosat|precosat)/) {
@@ -613,7 +664,7 @@ sub sat {
 	my $opt = $veryverbose ? "-v" : "";
 	$cmd = "$solver $opt '$sat_file'";
     } elsif ($solver =~ /\b(clasp)/) {
-	my $opt = $veryverbose ? "-V" : "";
+	my $opt = $veryverbose ? "--stats" : "";
 	$cmd = "$solver $opt '$sat_file'";
     } elsif ($solver =~ /\b(rsat)/) {
 	$cmd = "$solver '$sat_file' -r '$out_file'";

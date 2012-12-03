@@ -1,5 +1,6 @@
-jp.ac.kobe_u.cs.sugar
-jp.ac.kobe_u.cs.sugar.converter
-jp.ac.kobe_u.cs.sugar.csp
-jp.ac.kobe_u.cs.sugar.encoder
-jp.ac.kobe_u.cs.sugar.expression
+jp.kobe_u.sugar
+jp.kobe_u.sugar.converter
+jp.kobe_u.sugar.csp
+jp.kobe_u.sugar.encoder
+jp.kobe_u.sugar.expression
+jp.kobe_u.sugar.hook
