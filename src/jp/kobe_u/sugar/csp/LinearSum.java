@@ -10,7 +10,6 @@ import java.util.TreeMap;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.expression.Expression;
 
 /**

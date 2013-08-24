@@ -3,19 +3,11 @@ package jp.kobe_u.sugar.csp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.SugarMain;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.expression.Expression;
 
 /**
@@ -281,23 +273,6 @@ public class RelationLiteral extends Literal {
 		return bricks;
 	}
 	
-	@Override
-	public void encode(OldEncoder encoder, int[] clause0) throws SugarException, IOException {
-		int[] clause = new int[2*arity + clause0.length];
-		for (int i = 0; i < clause0.length; i++) {
-			clause[2*arity + i] = clause0[i];
-		}
-		List<Brick> bricks = getConflictBricks();
-		for (Brick brick : bricks) {
-			for (int i = 0; i < arity; i++) {
-				IntegerVariable v = vs[i];
-				clause[2*i + 0] = v.getCodeLE(brick.lb[i] - 1);
-				clause[2*i + 1] = OldEncoder.negateCode(v.getCodeLE(brick.ub[i]));
-			}
-			encoder.writeClause(clause);
-		}
-	}
-
 	@Override
 	public boolean isSatisfied() {
 		int[] point = new int[vs.length];

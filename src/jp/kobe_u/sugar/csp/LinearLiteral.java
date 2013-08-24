@@ -6,7 +6,6 @@ import java.util.Set;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This class implements a comparison literal of CSP.

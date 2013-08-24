@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.SugarMain;
 import jp.kobe_u.sugar.csp.BooleanLiteral;
 import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.Clause;
@@ -258,41 +257,41 @@ public class OrderEncoder extends AbstractEncoder {
     @Override
     public void encodeClause(Clause c) throws SugarException {
         if (! c.isSimple())
-            throw new SugarException("Cannot encode non-simple clause " + c.toString());
+            throw new SugarException("Cannot encode non-simple clause "
+                    + c.toString());
         problem.addComment(c.toString());
         if (c.isValid())
             return;
         try {
-        int[] clause = new int[c.simpleSize()];
-        Literal lit = null;
-        int i = 0;
-        for (Literal literal : c.getLiterals()) {
-            if (literal.isSimple()) {
-                int code;
-                if (literal instanceof BooleanLiteral) {
-                    code = ((BooleanLiteral)literal).getCode();                    
-                } else if (literal instanceof LinearLeLiteral) {
-                    code = getCode((LinearLeLiteral)literal);
-                } else if (literal instanceof LinearGeLiteral) {
-                    code = getCode((LinearGeLiteral)literal);
+            int[] clause = new int[c.simpleSize()];
+            Literal lit = null;
+            int i = 0;
+            for (Literal literal : c.getLiterals()) {
+                if (literal.isSimple()) {
+                    int code;
+                    if (literal instanceof BooleanLiteral) {
+                        code = ((BooleanLiteral) literal).getCode();
+                    } else if (literal instanceof LinearLeLiteral) {
+                        code = getCode((LinearLeLiteral) literal);
+                    } else if (literal instanceof LinearGeLiteral) {
+                        code = getCode((LinearGeLiteral) literal);
+                    } else {
+                        throw new SugarException("Cannot encode literal " + literal.toString());
+                    }
+                    if (code == Problem.TRUE_CODE)
+                        return;
+                    clause[i++] = code;
                 } else {
-                    throw new SugarException("Cannot encode literal " + literal.toString());
+                    lit = literal;
                 }
-                if (code == Problem.TRUE_CODE)
-                    return;
-                clause[i++] = code;
-            } else {
-                lit = literal;
             }
-        }
-        if (lit == null) {
-            problem.addClause(clause);
-        } else {
-            encodeLiteral(lit, clause);
-        }
+            if (lit == null) {
+                problem.addClause(clause);
+            } else {
+                encodeLiteral(lit, clause);
+            }
         } catch (SugarException e) {
             throw new SugarException(e.getMessage() + " in " + c);
         }
     }
-
 }

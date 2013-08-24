@@ -6,7 +6,6 @@ import java.util.Set;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.encoder.Problem;
 
 /**
@@ -85,28 +84,6 @@ public class LinearGeLiteral extends LinearLiteral {
             }
 		}
 		return removed;
-	}
-
-	@Override
-	public int getCode() throws SugarException {
-        if (! isSimple()) {
-            throw new SugarException("Internal error " + toString()); 
-        }
-        int b = linearSum.getB(); 
-        int code;
-        if (linearSum.size() == 0) {
-            code = b >= 0 ? Problem.TRUE_CODE : Problem.FALSE_CODE; 
-        } else {
-            IntegerVariable v = linearSum.getCoef().firstKey();
-            int a = linearSum.getA(v);
-            code = v.getCodeLE(-a, b);
-        }
-        return code;
-	}
-
-	@Override
-	public void encode(OldEncoder encoder, int[] clause) throws SugarException, IOException {
-        throw new SugarException("LinearGeLiteral can not be encodeed: " + toString()); 
 	}
 
 	/* (non-Javadoc)

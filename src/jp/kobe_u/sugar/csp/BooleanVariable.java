@@ -4,7 +4,6 @@ import java.util.BitSet;
 
 import jp.kobe_u.sugar.Logger;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This class implements a boolean variable of CSP.
@@ -117,9 +116,6 @@ public class BooleanVariable implements Comparable<BooleanVariable> {
 
 	public int getSatVariablesSize() {
 		return 1;
-	}
-
-	public void encode(OldEncoder encoder) {
 	}
 
 	public void decode(BitSet satValues) {

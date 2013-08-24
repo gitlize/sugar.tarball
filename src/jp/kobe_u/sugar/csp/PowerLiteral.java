@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * NOT IMPLEMENTED YET.
@@ -45,11 +44,6 @@ public class PowerLiteral extends Literal {
 	public boolean isSatisfied() {
 		// TODO isSatisfied
 		return false;
-	}
-
-	@Override
-	public void encode(OldEncoder encoder, int[] clause) throws SugarException, IOException {
-		// TODO encode
 	}
 
 	@Override

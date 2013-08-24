@@ -17,6 +17,8 @@ import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.csp.LinearSum;
 import jp.kobe_u.sugar.csp.Literal;
+import jp.kobe_u.sugar.csp.RelationLiteral;
+import jp.kobe_u.sugar.csp.RelationLiteral.Brick;
 import jp.kobe_u.sugar.expression.Expression;
 import jp.kobe_u.sugar.expression.Sequence;
 import jp.kobe_u.sugar.hook.ConverterHook;
@@ -37,6 +39,7 @@ public class Converter {
 	public static boolean INCREMENTAL_PROPAGATION = true;
     public static boolean LINEARIZE = true;
     public static boolean NORMALIZE_LINEARSUM = true;
+    public static boolean DECOMPOSE_RELATION = false;
     public static boolean DECOMPOSE_ALLDIFFERENT = true;
     public static boolean DECOMPOSE_WEIGHTEDSUM = true;
     public static boolean DECOMPOSE_CUMULATIVE = true;
@@ -384,9 +387,27 @@ public class Converter {
                 } else if (definitionConverter.isPredicate(seq)) {
 					x = definitionConverter.convertPredicate(seq);
                 } else if (definitionConverter.isRelation(seq)) {
-					Literal lit = definitionConverter.convertRelation(seq, negative);
-					clauses.add(new Clause(lit));
-					break;
+                    if (DECOMPOSE_RELATION) {
+                        RelationLiteral lit = (RelationLiteral)definitionConverter.convertRelation(seq, negative);
+                        List<Expression> e = new ArrayList<Expression>();
+                        e.add(Expression.AND);
+                        List<Brick> bricks = lit.getConflictBricks();
+                        for (Brick brick : bricks) {
+                            List<Expression> e1 = new ArrayList<Expression>();
+                            e1.add(Expression.AND);
+                            for (int i = 0; i < lit.arity; i++) {
+                                Expression v = Expression.create(lit.vs[i].getName());
+                                e1.add(v.ge(brick.lb[i]));
+                                e1.add(v.le(brick.ub[i]));
+                            }
+                            e.add(Expression.create(e1).not());
+                        }
+                        x = Expression.create(e);
+                    } else {
+                        Literal lit = definitionConverter.convertRelation(seq, negative);
+                        clauses.add(new Clause(lit));
+                        break;
+                    }
                 } else if (Expression.isLogical(seq)) {
                     if (seq.isSequence(Expression.NOT)) {
                         checkArity(seq, 1);

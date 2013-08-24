@@ -6,7 +6,6 @@ import java.util.Set;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This class implements a comparison literal of CSP.
@@ -81,16 +80,6 @@ public class LinearNeLiteral extends LinearLiteral {
 	        }
 		}
 		return removed;
-	}
-
-	@Override
-	public int getCode() throws SugarException {
-        throw new SugarException("Internal error " + toString()); 
-	}
-
-	@Override
-	public void encode(OldEncoder encoder, int[] clause) throws SugarException, IOException {
-        throw new SugarException("LinearNeLiteral can not be encodeed: " + toString()); 
 	}
 
 	/* (non-Javadoc)

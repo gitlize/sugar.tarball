@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This is an abstract class for literals of CSP.
@@ -38,9 +37,6 @@ public abstract class Literal {
 	public int getCode() throws SugarException {
 		throw new SugarException("Internal error " + toString()); 
 	}
-
-	public abstract void encode(OldEncoder encoder, int[] clause)
-	throws SugarException, IOException;
 
 	/**
 	 * Returns true when the literal is satisfied.

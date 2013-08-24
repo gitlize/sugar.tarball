@@ -155,30 +155,6 @@ public class ComparisonConverter {
         } else {
             return convertMUL((Sequence)x2.mul(x1));
         }
-        /*
-        if (true) {
-            throw new SugarException("Unsupported " + seq);
-        }
-        IntegerVariable v;
-        IntegerVariable v1 = toIntegerVariable(e1, x1);
-        IntegerVariable v2 = toIntegerVariable(e2, x2);
-        if (v1.equals(v2)) {
-            IntegerDomain d = d1.pow(2);
-            v = newIntegerVariable(d, seq);
-            // TODO Clause clause = new Clause(new PowerLiteral(v, v1, 2));
-            Clause clause = new Clause(new ProductLiteral(v, v1, v2));
-            clause.setComment(v.getName() + " == " + seq);
-            csp.add(clause);
-        } else {
-            IntegerDomain d = d1.mul(d2);
-            v = newIntegerVariable(d, seq);
-            Clause clause = new Clause(new ProductLiteral(v, v1, v2));
-            clause.setComment(v.getName() + " == " + seq);
-            csp.add(clause);
-        }
-        converter.addEquivalence(v, seq);
-        return new LinearLe(v);
-        */
     }
     
     private LinearSum convertDIV(Sequence seq) throws SugarException {

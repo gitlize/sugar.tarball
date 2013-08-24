@@ -38,7 +38,7 @@ INSTALLATION
   execution environment.
 
   - $java   : Java command path
-  - $jar    : Full path of the sugar-v2-0-0.jar file in the same directory
+  - $jar    : Full path of the sugar-v2-1-0.jar file in the same directory
   - $solver : Path of the SAT solver (e.g. MiniSat)
   - $tmp    : Path prefix for temporally created files
 
@@ -81,7 +81,7 @@ way.
 
 * Encoding CSP to SAT
 
-  $ java -jar sugar-v2-0-0.jar -encode file.csp file.cnf file.map
+  $ java -jar sugar-v2-1-0.jar -encode file.csp file.cnf file.map
 
 * Solving SAT
 
@@ -89,7 +89,7 @@ way.
 
 * Decoding SAT output
 
-  $ java -jar sugar-v2-0-0.jar [-competition] -decode file.out file.map
+  $ java -jar sugar-v2-1-0.jar [-competition] -decode file.out file.map
 
 ================
 LIMITATIONS AND KNOWN BUGS

@@ -8,7 +8,6 @@ import java.util.TreeSet;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This class implements a clause in CSP.
@@ -223,32 +222,6 @@ public class Clause {
 		return false;
 	}
 	
-	public void encode(OldEncoder encoder) throws SugarException, IOException {
-		if (! isSimple()) {
-			throw new SugarException("Cannot encode non-simple clause " + toString());
-		}
-		encoder.writeComment(toString());
-		if (isValid()) {
-			return;
-		}
-		int[] clause = new int[simpleSize()];
-		Literal lit = null;
-		int i = 0;
-		for (Literal literal : literals) {
-			if (literal.isSimple()) {
-				clause[i] = literal.getCode();
-				i++;
-			} else {
-				lit = literal;
-			}
-		}
-		if (lit == null) {
-			encoder.writeClause(clause);
-		} else {
-			lit.encode(encoder, clause);
-		}
-	}
-
 	/**
 	 * Returns the string representation of the clause.
 	 * @return the string representation

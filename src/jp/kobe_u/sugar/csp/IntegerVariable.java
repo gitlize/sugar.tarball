@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.encoder.Problem;
 
 /**
@@ -167,85 +166,10 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
 		return domain.contains(value);
 	}
 
-	public void compact(CSP csp) throws SugarException {
-		if (! domain.isContiguous() || domain.size() <= OldEncoder.BASE) {
-			return;
-		}
-		vs = new IntegerVariable[2];
-		offset = domain.getLowerBound();
-		int max = domain.getUpperBound() - offset;
-		int ub0 = OldEncoder.BASE - 1;
-		int ub1 = max / OldEncoder.BASE;
-		vs[0] = new IntegerVariable(new IntegerDomain(0, ub0));
-		csp.add(vs[0]);
-		vs[1] = new IntegerVariable(new IntegerDomain(0, ub1));
-		csp.add(vs[1]);
-		int c = max % OldEncoder.BASE;
-		if (c != OldEncoder.BASE - 1) {
-			Clause clause = new Clause();
-			clause.add(new LinearLeLiteral(
-					new LinearSum(1, vs[1], -ub1+1)));
-			clause.add(new LinearLeLiteral(
-					new LinearSum(1, vs[0], -c)));
-			csp.add(clause);
-		}
-	}
-	
 	public int getSatVariablesSize() {
 		if (vs != null)
 			return 0;
 		return domain.size() - 1;
-	}
-
-	public int getCodeLE(int value) {
-		if (value < domain.getLowerBound()) {
-			return Problem.FALSE_CODE;
-		} else if (value >= domain.getUpperBound()) {
-			return Problem.TRUE_CODE;
-		}
-		return code + domain.sizeLE(value) - 1;
-	}
-
-	public int getCodeLE(int a, int b) {
-		int code;
-		if (a >= 0) {
-//			int c = (int) Math.floor((double) b / a);
-			int c;
-			if (b >= 0) {
-				c = b/a;
-			} else {
-				c = (b-a+1)/a;
-			}
-			code = getCodeLE(c);
-		} else {
-//			int c = (int) Math.ceil((double) b / a) - 1;
-			int c;
-			if (b >= 0) {
-				c = b/a - 1;
-			} else {
-				c = (b+a+1)/a - 1;
-			}
-			code = OldEncoder.negateCode(getCodeLE(c));
-		}
-		return code;
-	}
-
-	public void encode(OldEncoder encoder) throws IOException {
-		encoder.writeComment(toString());
-		if (vs == null) {
-			int[] clause = new int[2];
-			int a0 = domain.getLowerBound();
-			for (int a = a0 + 1; a <= domain.getUpperBound(); a++) {
-				if (domain.contains(a)) {
-					clause[0] = OldEncoder.negateCode(getCodeLE(a0));
-					clause[1] = getCodeLE(a);
-					encoder.writeClause(clause);
-					a0 = a;
-				}
-			}
-		} else {
-			
-		}
 	}
 
 	public void decode(BitSet satValues) {

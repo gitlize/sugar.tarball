@@ -1,10 +1,8 @@
 package jp.kobe_u.sugar.csp;
 
-import java.io.IOException;
 import java.util.Set;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.expression.Expression;
 
 /**
@@ -60,12 +58,6 @@ public class HoldLiteral extends Literal {
 	public boolean isSatisfied() {
 		// TODO isSatisfied
 		return false;
-	}
-
-	@Override
-	public void encode(OldEncoder encoder, int[] clause) throws SugarException, IOException {
-		// TODO encode
-	    throw new SugarException("Encoding HoldLiteral is not implemented");
 	}
 
 	@Override

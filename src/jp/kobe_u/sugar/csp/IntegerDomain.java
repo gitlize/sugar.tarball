@@ -312,7 +312,7 @@ public class IntegerDomain {
 
 	public IntegerDomain mul(int a) throws SugarException {
 		if (domain == null) {
-			// XXX
+			// TODO domain calculation for multiplication
 			if (false && size() <= MAX_SET_SIZE) {
 				SortedSet<Integer> d = new TreeSet<Integer>();
 				for (int value = lb; value <= ub; value++) {

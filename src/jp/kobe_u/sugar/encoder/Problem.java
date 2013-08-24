@@ -80,7 +80,7 @@ public abstract class Problem {
         clause = normalizeClause(clause);
         if (clause == null) {
             if (variablesCount == 0)
-                throw new SugarException("Internal error");
+                addVariables(1);
             addNormalizedClause(new int[] { 1 });
             clausesCount++;
             addNormalizedClause(new int[] { -1 });

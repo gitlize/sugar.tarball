@@ -21,7 +21,6 @@ import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.encoder.Encoder;
 import jp.kobe_u.sugar.encoder.FileProblem;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 import jp.kobe_u.sugar.encoder.OrderEncoder;
 import jp.kobe_u.sugar.encoder.Problem;
 import jp.kobe_u.sugar.expression.Expression;
@@ -221,7 +220,6 @@ public class SugarMain {
             return;
         }
         Logger.fine("Encoding CSP to SAT : " + satFileName);
-        // TODO OldEncoder is still needed to generate map file and decode
         Encoder encoder = new Encoder(csp);
         encoder.encode(satFileName);
         Logger.fine("Writing map file : " + mapFileName);
@@ -383,6 +381,8 @@ public class SugarMain {
             Converter.REDUCE_ARITY = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?decomp(ose)?")) {
             Converter.setDecomposeAll(! opt.startsWith("no_"));
+        } else if (opt.matches("(no_)?decomp(ose)?_rel(ation)?")) {
+            Converter.DECOMPOSE_RELATION = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?decomp(ose)?_alldiff(erent)?")) {
             Converter.DECOMPOSE_ALLDIFFERENT = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?decomp(ose)?_(weightedsum|wsum)")) {
@@ -437,6 +437,7 @@ public class SugarMain {
 	    simplify_clauses = true;
 	    Converter.REDUCE_ARITY = true;
 	    Converter.setDecomposeAll(true);
+	    Converter.DECOMPOSE_RELATION = false;
 	    Converter.HINT_ALLDIFF_PIGEON = true;
 	    Converter.REPLACE_ARGUMENTS = false;
 	}

@@ -3,7 +3,6 @@ package jp.kobe_u.sugar.csp;
 import java.io.IOException;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.OldEncoder;
 
 /**
  * This class implements a boolean literal of CSP.
@@ -77,13 +76,6 @@ public class BooleanLiteral extends Literal {
 	public int getCode() {
 		int code = v.getCode();
 		return negative ? -code : code;
-	}
-
-	@Override
-	public void encode(OldEncoder encoder, int[] clause) throws SugarException, IOException {
-		clause = expand(clause, 1);
-		clause[0] = getCode();
-		encoder.writeClause(clause);
 	}
 
 	/**
