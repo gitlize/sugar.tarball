@@ -18,6 +18,8 @@ import jp.kobe_u.sugar.converter.Converter;
 import jp.kobe_u.sugar.csp.BooleanVariable;
 import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.IntegerDomain;
+import jp.kobe_u.sugar.csp.IntegerDomainDiet;
+import jp.kobe_u.sugar.csp.IntegerDomainOld;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.encoder.Encoder;
 import jp.kobe_u.sugar.encoder.FileProblem;
@@ -34,13 +36,13 @@ import jp.kobe_u.sugar.hook.ConverterHook;
  */
 public class SugarMain {
     CSP csp = null;
-    boolean prolog = false;
-	boolean maxCSP = false;
-	boolean weightedCSP = false;
-	boolean competition = false;
-	boolean incremental = false;
-	boolean propagation = true;
-	boolean simplify_clauses = true;
+    static boolean prolog = false;
+    static boolean maxCSP = false;
+    static boolean weightedCSP = false;
+    static boolean competition = false;
+    static boolean incremental = false;
+    static boolean propagation = true;
+    static boolean simplify_clauses = true;
 	public static int debug = 0;
 
 	private List<Expression> toMaxCSP(List<Expression> expressions0) throws SugarException {
@@ -141,6 +143,36 @@ public class SugarMain {
         return expressions;
     }
     
+    private List<Expression> toGCNF(List<Expression> expressions0) throws SugarException {
+        List<Expression> expressions = new ArrayList<Expression>();
+        int n = 0; 
+        int label = 0;
+        for (Expression x: expressions0) {
+            if (x.isSequence(Expression.DOMAIN_DEFINITION)
+                || x.isSequence(Expression.INT_DEFINITION)
+                || x.isSequence(Expression.BOOL_DEFINITION)
+                || x.isSequence(Expression.PREDICATE_DEFINITION)
+                || x.isSequence(Expression.RELATION_DEFINITION)) {
+                expressions.add(x);
+            } else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
+                throw new SugarException("Illegal " + x);
+            } else {
+                // (or (label 1) constraint)
+                label++;
+                x = Expression.create(Expression.LABEL, Expression.create(label)).or(x);
+                expressions.add(x);
+                n++;
+            }
+        }
+        int topWeight = label;
+        expressions.add(Expression.create(
+                Expression.GROUPS_DEFINITION,
+                Expression.create(label),
+                Expression.create(topWeight)));
+        Logger.info("Group CSP: " + n + " constraints");
+        return expressions;
+    }
+    
 	public void translate(String cspFileName) throws SugarException, IOException {
 	    // Parsing
 		Logger.fine("Parsing " + cspFileName);
@@ -165,8 +197,10 @@ public class SugarMain {
                 System.out.println("c " + x);
         }
 		Logger.status();
-		// MaxCSP or WeightedCSP translation 
-        if (maxCSP) {
+		// GCNF or MaxCSP or WeightedCSP translation 
+        if (Problem.GCNF || Problem.GWCNF) {
+            expressions = toGCNF(expressions);
+        } else if (maxCSP) {
             expressions = toMaxCSP(expressions);
         } else if (weightedCSP) {
             expressions = toWeightedCSP(expressions);
@@ -263,7 +297,7 @@ public class SugarMain {
 						lb = Integer.parseInt(s[3].substring(0, pos));
 						ub = Integer.parseInt(s[3].substring(pos+2));
 					}
-					domain = new IntegerDomain(lb, ub);
+					domain = IntegerDomain.create(lb, ub);
 				} else {
 					SortedSet<Integer> d = new TreeSet<Integer>();
 					for (int i = 3; i < s.length; i++) {
@@ -280,7 +314,7 @@ public class SugarMain {
 							d.add(value);
 						}
 					}
-					domain = new IntegerDomain(d);
+					domain = IntegerDomain.create(d);
 				}
 				IntegerVariable v = new IntegerVariable(name, domain);
 				v.setCode(code);
@@ -354,7 +388,10 @@ public class SugarMain {
             out = new PrintWriter(new BufferedWriter(new FileWriter(outputFileName)));
         OutputInterface output;
         if (outputHook == null) {
-            output = new Output();
+            if (format.equals("smt"))
+                output = new OutputSMT();
+            else
+                output = new Output();
         } else {
             Class<?> clazz = Class.forName(outputHook);
             output = (OutputInterface)clazz.newInstance();
@@ -363,10 +400,11 @@ public class SugarMain {
         output.setOut(out);
         output.setFormat(format);
         output.output();
+        out.close();
         Logger.status();
     }
     
-	private boolean setOption(String opt) {
+	private static boolean setOption(String opt) {
         if (opt.matches("(no_)?peep(hole)?")) {
             Converter.OPT_PEEPHOLE = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?linear(ize)?")) {
@@ -379,6 +417,9 @@ public class SugarMain {
             simplify_clauses = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?reduce(_arity)?") || opt.matches("(no_)?new_variable")) {
             Converter.REDUCE_ARITY = ! opt.startsWith("no_");
+        } else if (opt.matches("arity=(\\d+)")) {
+            int n = "arity=".length();
+            Converter.MAX_ARITY = Integer.parseInt(opt.substring(n));
         } else if (opt.matches("(no_)?decomp(ose)?")) {
             Converter.setDecomposeAll(! opt.startsWith("no_"));
         } else if (opt.matches("(no_)?decomp(ose)?_rel(ation)?")) {
@@ -420,16 +461,35 @@ public class SugarMain {
         } else if (opt.matches("split=(\\d+)")) {
             int n = "split=".length();
             Converter.SPLITS = Integer.parseInt(opt.substring(n));
+        } else if (opt.matches("(no_)?use_eq")) {
+            Converter.USE_EQ = ! opt.startsWith("no_");
+        } else if (opt.matches("(no_)?diet")) {
+            IntegerDomain.USE_DIET_DOMAIN = ! opt.startsWith("no_");
         } else if (opt.matches("domain=(\\d+)")) {
             int n = "domain=".length();
-            IntegerDomain.MAX_SET_SIZE = Integer.parseInt(opt.substring(n));
-         } else {
+            int size = Integer.parseInt(opt.substring(n));
+            IntegerDomainOld.MAX_SET_SIZE = size;
+            IntegerDomainDiet.MAX_SET_SIZE = size;
+        } else if (opt.matches("(no_)?gcnf")) {
+            Problem.GCNF = ! opt.startsWith("no_");
+        } else if (opt.matches("(no_)?gwcnf")) {
+            Problem.GWCNF = ! opt.startsWith("no_");
+        } else if (opt.matches("simp_cache=(\\d+)")) {
+            int n = "simp_cache=".length();
+            int size = Integer.parseInt(opt.substring(n));
+            if (size <= 0) {
+                CSP.USE_SIMPLIFYCACHE = false;
+            } else {
+                CSP.USE_SIMPLIFYCACHE = true;
+                CSP.MAX_SIMPLIFYCACHE_SIZE = size;
+            }
+        } else {
             return false;
         }
 	    return true;
 	}
 	
-	private void setDefaultOptions() throws SugarException {
+	public static void setDefaultOptions() {
 	    Converter.OPT_PEEPHOLE = true;
 	    Converter.LINEARIZE = true;
 	    Converter.NORMALIZE_LINEARSUM = true;
@@ -437,9 +497,20 @@ public class SugarMain {
 	    simplify_clauses = true;
 	    Converter.REDUCE_ARITY = true;
 	    Converter.setDecomposeAll(true);
-	    Converter.DECOMPOSE_RELATION = false;
+	    Converter.DECOMPOSE_RELATION = false; // "true" has bug
 	    Converter.HINT_ALLDIFF_PIGEON = true;
 	    Converter.REPLACE_ARGUMENTS = false;
+	    Converter.USE_EQ = true;
+        IntegerDomain.USE_DIET_DOMAIN = false;
+        Problem.GCNF = false;
+        Problem.GWCNF = false;
+        CSP.USE_SIMPLIFYCACHE = true;
+        CSP.MAX_SIMPLIFYCACHE_SIZE = 1000;
+	}
+	
+	public static void init() {
+	    setDefaultOptions();
+        Converter.hooks = null;
 	}
 	
 	/**
@@ -447,26 +518,25 @@ public class SugarMain {
 	 */
 	public static void main(String[] args) {
 		try {
-			SugarMain sugarMain = new SugarMain();
-			sugarMain.setDefaultOptions();
+		    setDefaultOptions();
 			String outputHook = null;
 			String option = "";
 			int i = 0;
 			while (i < args.length) {
 			    if (args[i].equals("-prolog")) {
-			        sugarMain.prolog = true;
+			        prolog = true;
 			    } else if (args[i].equals("-max")) {
-			        sugarMain.maxCSP = true;
+			        maxCSP = true;
 			    } else if (args[i].equals("-weighted")) {
-                    sugarMain.weightedCSP = true;
+                    weightedCSP = true;
                 } else if (args[i].equals("-competition")) {
-                    sugarMain.competition = true;
+                    competition = true;
 				} else if (args[i].equals("-incremental")) {
-					sugarMain.incremental = true;
+					incremental = true;
 				} else if (args[i].equals("-option") && i + 1 < args.length) {
                     String[] opts = args[i+1].split(",");
                     for (String opt : opts) {
-                        if (! sugarMain.setOption(opt)) 
+                        if (! setOption(opt)) 
                             throw new SugarException("Unknown option " + opt);
                     }
 					i++;
@@ -492,6 +562,7 @@ public class SugarMain {
 				}
 				i++;
 			}
+			SugarMain sugarMain = new SugarMain();
 			int n = args.length - i;
             if (option.equals("-to") && n == 4) {
                 String format = args[i+1];

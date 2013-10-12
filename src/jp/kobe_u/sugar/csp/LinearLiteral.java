@@ -64,8 +64,40 @@ public abstract class LinearLiteral extends Literal {
 	public LinearSum getLinearExpression() {
 		return linearSum;
 	}
-	
-	/**
+
+	@Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((cmp == null) ? 0 : cmp.hashCode());
+        result = prime * result
+                + ((linearSum == null) ? 0 : linearSum.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        LinearLiteral other = (LinearLiteral) obj;
+        if (cmp == null) {
+            if (other.cmp != null)
+                return false;
+        } else if (!cmp.equals(other.cmp))
+            return false;
+        if (linearSum == null) {
+            if (other.linearSum != null)
+                return false;
+        } else if (!linearSum.equals(other.linearSum))
+            return false;
+        return true;
+    }
+
+    /**
 	 * Returns the string representation of the comparison literal.
 	 * @return the string representation
 	 */

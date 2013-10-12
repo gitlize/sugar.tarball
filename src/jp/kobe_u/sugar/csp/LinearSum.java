@@ -212,7 +212,7 @@ public class LinearSum {
 	
 	public IntegerDomain getDomain() throws SugarException {
 		if (domain == null) {
-			domain = new IntegerDomain(b, b);
+			domain = IntegerDomain.create(b, b);
 			for (IntegerVariable v : coef.keySet()) {
 				int a = getA(v);
 				domain = domain.add(v.getDomain().mul(a));
@@ -223,7 +223,7 @@ public class LinearSum {
 	
 	public IntegerDomain getDomainExcept(IntegerVariable v) throws SugarException {
 		// Re-calculation is needed since variable domains might be modified. 
-		IntegerDomain d = new IntegerDomain(b, b);
+		IntegerDomain d = IntegerDomain.create(b, b);
 		for (IntegerVariable v1 : coef.keySet()) {
 			if (! v1.equals(v)) {
 				int a = getA(v1);

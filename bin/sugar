@@ -10,7 +10,7 @@ use IPC::Open2;
 use strict;
 $| = 1;
 
-my $version = "v2-1-0";
+my $version = "v2-1-2";
 my $java = "java";
 my $jar = "/usr/local/lib/sugar/sugar-$version.jar";
 my $solver0 = "minisat";
@@ -110,7 +110,7 @@ sub usage {
     print "\t-prolog           : Prolog style input\n";
     print "\t-max              : Max-CSP mode\n";
     print "\t-weighted         : Weighted-CSP mode (experimental)\n";
-    print "\t-translate format : translate CSP by format (csp, prolog, asp) (experimental)\n";
+    print "\t-translate format : translate CSP by format (csp, prolog, asp, smt) (experimental)\n";
     print "\t-conversionHooks class1,... : set conversion hooks (experimental)\n";
     print "\t-output file      : output file name of the translation (experimental)\n";
     print "\t-outputHook class : set output hook (experimental)\n";

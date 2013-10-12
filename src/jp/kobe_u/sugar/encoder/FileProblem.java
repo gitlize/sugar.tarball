@@ -43,7 +43,7 @@ public class FileProblem extends Problem {
             }
             satByteBuffer = ByteBuffer.allocateDirect(SAT_BUFFER_SIZE);
         } catch (IOException e) {
-            throw new SugarException(e.getMessage());
+            throw new SugarException(e.getMessage(), e);
         }
     }
 
@@ -78,7 +78,7 @@ public class FileProblem extends Problem {
             satFileChannel.write(satByteBuffer);
             satByteBuffer.clear();
         } catch (IOException e) {
-            throw new SugarException(e.getMessage());
+            throw new SugarException(e.getMessage(), e);
         }
     }
 
@@ -98,17 +98,37 @@ public class FileProblem extends Problem {
             satFileChannel = null;
             satByteBuffer = null;
         } catch (IOException e) {
-            throw new SugarException(e.getMessage());
+            throw new SugarException(e.getMessage(), e);
         }
     }
     
     public void update() throws SugarException {
         int n = 64;
         StringBuilder s = new StringBuilder();
-        s.append("p cnf ");
-        s.append(Integer.toString(variablesCount));
-        s.append(" ");
-        s.append(Integer.toString(clausesCount));
+        if (groups > 0) {
+            if (GCNF) {
+                s.append("p gcnf ");
+                s.append(Integer.toString(variablesCount));
+                s.append(" ");
+                s.append(Integer.toString(clausesCount));
+                s.append(" ");
+                s.append(Integer.toString(groups));
+            } else if (GWCNF) {
+                s.append("p gwcnf ");
+                s.append(Integer.toString(variablesCount));
+                s.append(" ");
+                s.append(Integer.toString(clausesCount));
+                s.append(" ");
+                s.append(Integer.toString(topWeight));
+            } else {
+                throw new SugarException("GCNF or GWCNF format should be used");
+            }
+        } else {
+            s.append("p cnf ");
+            s.append(Integer.toString(variablesCount));
+            s.append(" ");
+            s.append(Integer.toString(clausesCount));
+        }
         while (s.length() < n - 1) {
             s.append(" ");
         }
@@ -125,7 +145,7 @@ public class FileProblem extends Problem {
             satFile1.setLength(fileSize);
             satFile1.close();
         } catch (IOException e) {
-            throw new SugarException(e.getMessage());
+            throw new SugarException(e.getMessage(), e);
         }
     }
     
@@ -166,6 +186,17 @@ public class FileProblem extends Problem {
     }
     
     public void addNormalizedClause(int[] clause) throws SugarException {
+        if (GCNF) {
+            if (groupsString == null)
+                write("{0} ");
+            else
+                write("{" + groupsString + "} ");
+        } else if (GWCNF) {
+            if (groupsString == null)
+                write("0 " + topWeight + " ");
+            else
+                write(groupsString + " " + weightString + " ");
+        }
         for (int code : clause)
             write(Integer.toString(code) + " ");
         write("0\n");

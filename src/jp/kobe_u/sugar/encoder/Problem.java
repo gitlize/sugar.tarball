@@ -6,8 +6,13 @@ import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.SugarMain;
 
 public abstract class Problem {
+    public static boolean GCNF = false;
+    public static boolean GWCNF = false;
     public static final int FALSE_CODE = 0;
     public static final int TRUE_CODE = Integer.MIN_VALUE;
+    
+    public int groups;
+    public int topWeight;
 
     public int variablesCount = 0;
     public int clausesCount = 0;
@@ -15,7 +20,9 @@ public abstract class Problem {
     private int variablesCountSave = 0;
     private int clausesCountSave = 0;
     private long fileSizeSave = 0;
-
+    protected String groupsString = null;
+    protected String weightString = null;
+    
     public void clear() throws SugarException {
         variablesCount = 0;
         clausesCount = 0;
@@ -74,6 +81,11 @@ public abstract class Problem {
     public void addPragmaDominant(int code0, int code1) throws SugarException {
     }
 
+    public void setGroups(int groups, int topWeight) {
+        this.groups = groups;
+        this.topWeight = topWeight;
+    }
+    
     public abstract void addNormalizedClause(int[] clause) throws SugarException;
     
     public void addClause(int[] clause) throws SugarException {
@@ -99,6 +111,7 @@ public abstract class Problem {
         clausesCount++;
     }
     
+    /*
     public void addClause(List<Integer> clause0) throws SugarException {
         int[] clause = new int[clause0.size()];
         for (int i = 0; i < clause.length; i++) {
@@ -111,11 +124,33 @@ public abstract class Problem {
         for (int[] clause : clauses)
             addClause(clause);
     }
+    */
     
+    public void beginGroups(List<Integer> groups, int weight) {
+        if (groups == null || groups.size() == 0) {
+            groupsString = null;
+            weightString = null;
+        } else {
+            groupsString = "";
+            String delim = "";
+            for (int g : groups) {
+                groupsString += delim + g;
+                delim = ",";
+            }
+            weightString = Integer.toString(weight);
+        }
+    }
+
+    public void endGroups() {
+        groupsString = null;
+        weightString = null;
+    }
+
     public String summary() {
         return
         variablesCount + " SAT variables, " +
         clausesCount + " SAT clauses, " +
         fileSize + " bytes";
     }
+
 }

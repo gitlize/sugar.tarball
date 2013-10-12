@@ -57,5 +57,7 @@ public class SugarConstants {
     public static final String HOLD = "hold";
     public static final String NIL = "nil";
     public static final String WEIGHTED = "weighted"; 
+    public static final String LABEL = "label";
+    public static final String GROPUS_DEFINITION = "groups";
     public static final String PRAGMA = "PRAGMA";
 }

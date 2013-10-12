@@ -1,6 +1,7 @@
 package jp.kobe_u.sugar;
 
 import java.io.PrintWriter;
+import java.util.Iterator;
 import java.util.List;
 
 import jp.kobe_u.sugar.csp.BooleanLiteral;
@@ -234,7 +235,9 @@ public class Output implements OutputInterface {
             out.println(formatter.comment(comment));
         formatter.begin(SugarConstants.INT_DEFINITION).add(name);
         formatter.begin();
-        for (int[] interval : domain.intervals()) {
+        Iterator<int[]> iter = domain.intervals();
+        while (iter.hasNext()) {
+            int[] interval = iter.next();
             formatter.begin().add(interval[0]).add(interval[1]).end();
         }
         formatter.end();
@@ -377,7 +380,6 @@ public class Output implements OutputInterface {
         if (csp.isUnsatisfiable()) {
             formatter.add(SugarConstants.FALSE);
             out.println(formatter.finish());
-            out.close();
             return;
         }
         for (IntegerVariable v : csp.getIntegerVariables()) {
@@ -396,6 +398,5 @@ public class Output implements OutputInterface {
         for (Clause clause : csp.getClauses()) {
             outputClause(clause);
         }
-        out.close();
     }
 }

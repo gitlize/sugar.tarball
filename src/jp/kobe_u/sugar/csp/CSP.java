@@ -4,10 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import jp.kobe_u.sugar.Logger;
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.converter.Converter;
+import jp.kobe_u.sugar.expression.Expression;
 
 /**
  * A class for CSP (Constraint Satisfaction Problems).
@@ -16,16 +21,34 @@ import jp.kobe_u.sugar.SugarException;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class CSP {
-	public static boolean simplifyAll = true;
-	
+    public static boolean USE_SIMPLIFYCACHE = true;
+    public static int MAX_SIMPLIFYCACHE_SIZE = 1000;
+    public static boolean simplifyAll = true;
+
+    private class SimplifyMap extends LinkedHashMap<Literal,BooleanLiteral> {
+        SimplifyMap() {
+            super(100, 0.75f, true);
+        }
+
+        /* (non-Javadoc)
+         * @see java.util.LinkedHashMap#removeEldestEntry(java.util.Map.Entry)
+         */
+        @Override
+        protected boolean removeEldestEntry(Entry<Literal,BooleanLiteral> eldest) {
+            return size() > CSP.MAX_SIMPLIFYCACHE_SIZE;
+        }
+    }
+    
 	private List<IntegerVariable> integerVariables;
 
 	private List<BooleanVariable> booleanVariables;
-
+	
 	private List<Relation> relations;
 	
 	private List<Clause> clauses;
 
+	private int currentGroupID;
+	
 	private HashMap<String,IntegerVariable> integerVariableMap;
 
 	private HashMap<String,BooleanVariable> booleanVariableMap;
@@ -36,13 +59,19 @@ public class CSP {
 
 	private Objective objective = Objective.NONE;
 
+    private int groups = 0;
+
+    private int topWeight = 0;
+
     private int integerVariablesSizeSave = 0;
 
     private int booleanVariablesSizeSave = 0;
 
     private int clausesSizeSave = 0;
-	
-	/**
+
+    private Map<Literal,BooleanLiteral> simplifyCache;
+
+    /**
 	 * Objective types.
 	 */
 	public enum Objective {
@@ -73,6 +102,7 @@ public class CSP {
         integerVariableMap = new HashMap<String,IntegerVariable>();
         booleanVariableMap = new HashMap<String,BooleanVariable>();
         relationMap = new HashMap<String,Relation>();
+        simplifyCache = new SimplifyMap();
 	}
 	
 	public void commit() {
@@ -121,8 +151,24 @@ public class CSP {
 	public void setObjective(Objective objective) {
 		this.objective = objective;
 	}
-	
-	/**
+
+	public int getGroups() {
+        return groups;
+    }
+
+    public void setGroups(int groups) {
+        this.groups = groups;
+    }
+
+    public int getTopWeight() {
+        return topWeight;
+    }
+
+    public void setTopWeight(int topWeight) {
+        this.topWeight = topWeight;
+    }
+
+    /**
 	 * Returns the integer variables.
 	 * @return the integer variables
 	 */
@@ -289,18 +335,23 @@ public class CSP {
 				clause.add(literal);
 			} else {
 				complex++;
-				if (! simplifyAll && complex == 1) {
+				if (! CSP.simplifyAll && complex == 1) {
 					clause.add(literal);
+				} else if (USE_SIMPLIFYCACHE && simplifyCache.containsKey(literal)) {
+				    Literal lit = simplifyCache.get(literal); 
+				    clause.add(lit);
 				} else {
 					BooleanVariable p = new BooleanVariable();
 					add(p);
-					Literal posLiteral = new BooleanLiteral(p, false);
-					Literal negLiteral = new BooleanLiteral(p, true);
+					BooleanLiteral posLiteral = new BooleanLiteral(p, false);
+					BooleanLiteral negLiteral = new BooleanLiteral(p, true);
 					Clause newClause = new Clause();
 					newClause.add(negLiteral);
 					newClause.add(literal);
 					newClauses.add(newClause);
 					clause.add(posLiteral);
+					if (USE_SIMPLIFYCACHE)
+					    simplifyCache.put(literal, posLiteral);
 				}
 			}
 		}

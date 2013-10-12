@@ -456,7 +456,7 @@ public class ComparisonConverter {
         return e0;
     }
     
-    private LinearSum simplifyLinearExpression(LinearSum e, boolean first) throws SugarException {
+    private LinearSum simplifyLinearExpression(LinearSum e, String cmp, boolean first) throws SugarException {
         if (Converter.ESTIMATE_SATSIZE) {
             // seems bad in general
             if (e.satSizeLE(Converter.MAX_LINEARSUM_SIZE)) {
@@ -477,7 +477,8 @@ public class ComparisonConverter {
             if (factor > 1) {
                 ei.divide(factor);
             }
-            ei = simplifyLinearExpression(ei, false);
+            // Recursive call is not necessary, but it works better
+            ei = simplifyLinearExpression(ei, "eq", false);
             // System.out.println(es[i] + " ==> " + ei);
             if (ei.size() > 1) {
                 IntegerVariable v = new IntegerVariable(ei.getDomain());
@@ -485,8 +486,17 @@ public class ComparisonConverter {
                 csp.add(v);
                 Expression x = Expression.create(v.getName());
                 Expression ex = ei.toExpression();
-                Expression eq = x.eq(ex);
-                eq.setComment(v.getName() + " == " + ei);
+                Expression eq;
+                if (! Converter.USE_EQ && cmp.equals("ge")) {
+                    eq = x.le(ex);
+                    eq.setComment(v.getName() + " <= " + ex);
+                } else if (! Converter.USE_EQ && cmp.equals("le")) {
+                    eq = x.ge(ex);
+                    eq.setComment(v.getName() + " >= " + ex);
+                } else {
+                    eq = x.eq(ex);
+                    eq.setComment(v.getName() + " == " + ex);
+                }
                 convertConstraint(eq);
                 ei = new LinearSum(v);
             }
@@ -498,10 +508,56 @@ public class ComparisonConverter {
         return e;
     }
     
-    private LinearSum reduceArity(LinearSum e) throws SugarException {
-        if (Converter.REDUCE_ARITY && e.size() > 3 &&
-                e.isDomainLargerThanExcept(Converter.MAX_LINEARSUM_SIZE)) {
-            e = simplifyLinearExpression(e, true);
+    private LinearSum reduceLinearExpression(LinearSum e, String cmp) throws SugarException {
+        if (e.size() <= Converter.MAX_ARITY)
+            return e;
+        int b = e.getB();
+        LinearSum[] es = e.split(Converter.MAX_ARITY);
+        e = new LinearSum(b);
+        for (int i = 0; i < es.length; i++) {
+            LinearSum ei = es[i];
+            int factor = ei.factor();
+            if (factor > 1) {
+                ei.divide(factor);
+            }
+            ei = reduceLinearExpression(ei, "eq");
+            // System.out.println(es[i] + " ==> " + ei);
+            if (ei.size() > 1) {
+                IntegerVariable v = new IntegerVariable(ei.getDomain());
+                v.setComment(v.getName() + " : " + ei);
+                csp.add(v);
+                Expression x = Expression.create(v.getName());
+                Expression ex = ei.toExpression();
+                Expression eq;
+                if (! Converter.USE_EQ && cmp.equals("ge")) {
+                    eq = x.le(ex);
+                    eq.setComment(v.getName() + " <= " + ex);
+                } else if (! Converter.USE_EQ && cmp.equals("le")) {
+                    eq = x.ge(ex);
+                    eq.setComment(v.getName() + " >= " + ex);
+                } else {
+                    eq = x.eq(ex);
+                    eq.setComment(v.getName() + " == " + ex);
+                }
+                convertConstraint(eq);
+                ei = new LinearSum(v);
+            }
+            if (factor > 1) {
+                ei.multiply(factor);
+            }
+            e.add(ei);
+        }
+        return e;
+    }
+
+
+    private LinearSum reduceArity(LinearSum e, String cmp) throws SugarException {
+        if (Converter.REDUCE_ARITY) {
+            if (Converter.MAX_ARITY > 0) {
+                e = reduceLinearExpression(e, cmp);
+            } else if (e.size() > 3 && e.isDomainLargerThanExcept(Converter.MAX_LINEARSUM_SIZE)) {
+                e = simplifyLinearExpression(e, cmp, true);
+            }
         }
         return e;
     }
@@ -528,18 +584,15 @@ public class ComparisonConverter {
     public List<Clause> convertComp(Expression x, Expression y, String cmp) throws SugarException {
         LinearSum e = convertFormula(x.sub(y));
         e.factorize();
+        e = reduceArity(e, cmp);
         Literal lit = null;
         if (cmp.equals("eq")) {
-            e = reduceArity(e);
             lit = new LinearEqLiteral(e);
         } else if (cmp.equals("ne")) {
-            e = reduceArity(e);
             lit = new LinearNeLiteral(e);
         } else if (cmp.equals("ge")) {
-            e = reduceArity(e);
             lit = new LinearGeLiteral(e);
         } else if (cmp.equals("le")) {
-            e = reduceArity(e);
             lit = new LinearLeLiteral(e);
         } else {
             throw new SugarException("Unknown comparison operator in convertComp: " + cmp);

@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
 <meta name="title" content="CHANGES of Sugar"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2013-08-24 23:21:46 JST"/>
+<meta name="generated" content="2013-10-13 05:04:54 JST"/>
 <meta name="author" content="&lt;a href='http://bach.istc.kobe-u.ac.jp/tamura.html'&gt;Naoyuki Tamura&lt;/a&gt;"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -68,11 +68,12 @@ org_html_manager.setup();  // activate after the parameters are set
 <div id="text-table-of-contents">
 <ul>
 <li><a href="#sec-1">Overview</a></li>
-<li><a href="#sec-2">Version 2.1.0</a></li>
-<li><a href="#sec-3">Version 2.0.0</a></li>
-<li><a href="#sec-4">Version 1.15</a></li>
-<li><a href="#sec-5">Version 1.14</a></li>
-<li><a href="#sec-6">Version 1.13</a></li>
+<li><a href="#sec-2">Version 2.1.2</a></li>
+<li><a href="#sec-3">Version 2.1.0</a></li>
+<li><a href="#sec-4">Version 2.0.0</a></li>
+<li><a href="#sec-5">Version 1.15</a></li>
+<li><a href="#sec-6">Version 1.14</a></li>
+<li><a href="#sec-7">Version 1.13</a></li>
 </ul>
 </div>
 </div>
@@ -88,13 +89,30 @@ org_html_manager.setup();  // activate after the parameters are set
 </div>
 
 <div id="outline-container-2" class="outline-2">
-<h2 id="sec-2">Version 2.1.0 <span class="timestamp-wrapper"> <span class="timestamp">2013-08-24 Sat</span></span></h2>
+<h2 id="sec-2">Version 2.1.2 <span class="timestamp-wrapper"> <span class="timestamp">2013-10-13 Sun</span></span></h2>
 <div class="outline-text-2" id="text-2">
 
 <ul>
-<li>Bug fix when the given CSP is trivially unsatisfiable.
+<li>GCNF and GWCNF output
+<pre class="example">
+sugar -n -o gcnf -sat output.gcnf input.csp
+</pre>
+
 </li>
-<li>Refactoring
+<li>New option in CSP-to-CSP translator
+<pre class="example">
+sugar -o arity=3 -translate csp -output output.csp input.csp
+</pre>
+
+</li>
+<li>SMT output (QF_LIA) in CSP-to-CSP translator
+<pre class="example">
+sugar -o no_norm,no_reduce -translate smt -output output.smt2 input.csp
+</pre>
+
+</li>
+<li>Use cache in Tseitin transformation.
+    Cache size can be changed by "-o simp_cache=2000" (default 1000).
 </li>
 </ul>
 
@@ -103,8 +121,23 @@ org_html_manager.setup();  // activate after the parameters are set
 </div>
 
 <div id="outline-container-3" class="outline-2">
-<h2 id="sec-3">Version 2.0.0</h2>
+<h2 id="sec-3">Version 2.1.0 <span class="timestamp-wrapper"> <span class="timestamp">2013-08-24 Sat</span></span></h2>
 <div class="outline-text-2" id="text-3">
+
+<ul>
+<li>Bug fix when the given CSP is trivially unsatisfiable.
+</li>
+<li>Code refactoring
+</li>
+</ul>
+
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4">Version 2.0.0</h2>
+<div class="outline-text-2" id="text-4">
 
 <ul>
 <li>Package name space is changed to jp.kobe_u.sugar from jp.ac.kobe_u.cs.sugar.
@@ -128,9 +161,9 @@ org_html_manager.setup();  // activate after the parameters are set
 
 </div>
 
-<div id="outline-container-4" class="outline-2">
-<h2 id="sec-4">Version 1.15</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5">Version 1.15</h2>
+<div class="outline-text-2" id="text-5">
 
 <ul>
 <li>Support for Scala interface named Copris (Constraint Programming in Scala)
@@ -142,9 +175,9 @@ org_html_manager.setup();  // activate after the parameters are set
 
 </div>
 
-<div id="outline-container-5" class="outline-2">
-<h2 id="sec-5">Version 1.14</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6">Version 1.14</h2>
+<div class="outline-text-2" id="text-6">
 
 <ul>
 <li>UTF-8 code support for CSP files
@@ -190,9 +223,9 @@ org_html_manager.setup();  // activate after the parameters are set
 
 </div>
 
-<div id="outline-container-6" class="outline-2">
-<h2 id="sec-6">Version 1.13</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7">Version 1.13</h2>
+<div class="outline-text-2" id="text-7">
 
 <ul>
 <li>Global constraint "allDifferent" is renamed to "alldifferent".
@@ -218,7 +251,7 @@ org_html_manager.setup();  // activate after the parameters are set
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2013-08-24 23:21:46 JST</p>
+<p class="date">Date: 2013-10-13 05:04:54 JST</p>
 <p class="author">Author: &lt;a href='http://bach.istc.kobe-u.ac.jp/tamura.html'&gt;Naoyuki Tamura&lt;/a&gt;</p>
 <p class="creator">Org version 7.8.02 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

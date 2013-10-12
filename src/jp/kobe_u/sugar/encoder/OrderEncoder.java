@@ -1,5 +1,6 @@
 package jp.kobe_u.sugar.encoder;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import jp.kobe_u.sugar.csp.Clause;
 import jp.kobe_u.sugar.csp.HoldLiteral;
 import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerVariable;
+import jp.kobe_u.sugar.csp.LabelLiteral;
 import jp.kobe_u.sugar.csp.LinearEqLiteral;
 import jp.kobe_u.sugar.csp.LinearGeLiteral;
 import jp.kobe_u.sugar.csp.LinearLeLiteral;
@@ -264,10 +266,16 @@ public class OrderEncoder extends AbstractEncoder {
             return;
         try {
             int[] clause = new int[c.simpleSize()];
+            List<Integer> groups = new ArrayList<Integer>();
+            int weight = 1;
             Literal lit = null;
             int i = 0;
             for (Literal literal : c.getLiterals()) {
                 if (literal.isSimple()) {
+                    if (literal instanceof LabelLiteral) {
+                        groups.add(((LabelLiteral)literal).getLabel());
+                        continue;
+                    }
                     int code;
                     if (literal instanceof BooleanLiteral) {
                         code = ((BooleanLiteral) literal).getCode();
@@ -285,11 +293,13 @@ public class OrderEncoder extends AbstractEncoder {
                     lit = literal;
                 }
             }
+            problem.beginGroups(groups, weight);
             if (lit == null) {
                 problem.addClause(clause);
             } else {
                 encodeLiteral(lit, clause);
             }
+            problem.endGroups();
         } catch (SugarException e) {
             throw new SugarException(e.getMessage() + " in " + c);
         }

@@ -58,6 +58,9 @@ public class Encoder extends OrderEncoder {
 	
     public void encode(Problem problem) throws SugarException {
         this.problem = problem;
+        if (csp.getGroups() > 0) {
+            problem.setGroups(csp.getGroups(), csp.getTopWeight());
+        }
         encode();
     }
 
@@ -166,6 +169,9 @@ public class Encoder extends OrderEncoder {
                 if (st.sval.equals("s")) {
                     st.nextToken();
                     result = st.sval;
+                    do {
+                        st.nextToken();
+                    } while (st.ttype != StreamTokenizer.TT_EOL);
                 } else if (st.sval.equals("c")) {
                     do {
                         st.nextToken();
@@ -195,7 +201,7 @@ public class Encoder extends OrderEncoder {
             }
         }
         rd.close();
-		if (result.startsWith("SAT")) {
+		if (result.startsWith("SAT") || result.startsWith("OPT")) {
 			sat = true;
 			for (IntegerVariable v : csp.getIntegerVariables()) {
 				v.decode(satValues);

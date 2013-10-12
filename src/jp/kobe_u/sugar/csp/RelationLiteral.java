@@ -193,7 +193,7 @@ public class RelationLiteral extends Literal {
 		return bricks;
 	}
 	
-	private List<Brick> combineBricks(int i, List<Integer> values, Tuple tuple) {
+	private List<Brick> combineBricks(int i, List<Integer> values, Tuple tuple) throws SugarException {
 		List<Brick> bricks = null;
 		if (i == vs.length - 1) {
 			bricks = new ArrayList<Brick>();
@@ -267,7 +267,7 @@ public class RelationLiteral extends Literal {
 		return bricks;
 	}
 	
-	public List<Brick> getConflictBricks() {
+	public List<Brick> getConflictBricks() throws SugarException {
 		Tuple tuple = new Tuple(new int[vs.length]);
 		List<Brick> bricks = combineBricks(0, null, tuple);
 		return bricks;
@@ -283,6 +283,50 @@ public class RelationLiteral extends Literal {
 	}
 
 	@Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + arity;
+        result = prime * result + (conflicts ? 1231 : 1237);
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + (negative ? 1231 : 1237);
+        result = prime * result
+                + ((tupleSet == null) ? 0 : tupleSet.hashCode());
+        result = prime * result + Arrays.hashCode(vs);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        RelationLiteral other = (RelationLiteral) obj;
+        if (arity != other.arity)
+            return false;
+        if (conflicts != other.conflicts)
+            return false;
+        if (name == null) {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
+        if (negative != other.negative)
+            return false;
+        if (tupleSet == null) {
+            if (other.tupleSet != null)
+                return false;
+        } else if (!tupleSet.equals(other.tupleSet))
+            return false;
+        if (!Arrays.equals(vs, other.vs))
+            return false;
+        return true;
+    }
+
+    @Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		if (negative) {

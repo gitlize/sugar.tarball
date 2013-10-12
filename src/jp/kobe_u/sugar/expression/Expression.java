@@ -127,6 +127,10 @@ public abstract class Expression implements Comparable<Expression> {
             create(SugarConstants.WEIGHTED);
     public static final Expression ANY =
             create("$ANY");
+    public static final Expression LABEL =
+            create(SugarConstants.LABEL);
+    public static final Expression GROUPS_DEFINITION =
+            create(SugarConstants.GROPUS_DEFINITION);
 	private String comment = null; 
 	
 	private static HashSet<Expression> operators;

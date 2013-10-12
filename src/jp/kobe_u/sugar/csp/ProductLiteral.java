@@ -55,6 +55,43 @@ public class ProductLiteral extends Literal {
 	}
 
 	@Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((v == null) ? 0 : v.hashCode());
+        result = prime * result + ((v1 == null) ? 0 : v1.hashCode());
+        result = prime * result + ((v2 == null) ? 0 : v2.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ProductLiteral other = (ProductLiteral) obj;
+        if (v == null) {
+            if (other.v != null)
+                return false;
+        } else if (!v.equals(other.v))
+            return false;
+        if (v1 == null) {
+            if (other.v1 != null)
+                return false;
+        } else if (!v1.equals(other.v1))
+            return false;
+        if (v2 == null) {
+            if (other.v2 != null)
+                return false;
+        } else if (!v2.equals(other.v2))
+            return false;
+        return true;
+    }
+
+    @Override
 	public String toString() {
 		String s = "(eq " + v.getName() + " (mul " + v1.getName() + " " + v2.getName() + "))";
 		return s;

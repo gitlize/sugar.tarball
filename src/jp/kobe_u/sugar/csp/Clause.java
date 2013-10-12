@@ -83,7 +83,7 @@ public class Clause {
 		this.comment = comment;
 	}
 
-	public boolean isModified() {
+    public boolean isModified() {
 		for (Literal lit : literals) {
 			Set<IntegerVariable> vs = lit.getVariables();
 			if (vs != null) {

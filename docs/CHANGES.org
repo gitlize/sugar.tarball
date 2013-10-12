@@ -12,6 +12,15 @@
 * Overview
   This document describes the major changes of
   [[http://bach.istc.kobe-u.ac.jp/sugar/][Sugar]] (A SAT-based Constraint Solver).
+* Version 2.1.2 [2013-10-13 Sun]
+  - GCNF and GWCNF output
+    : sugar -n -o gcnf -sat output.gcnf input.csp
+  - New option in CSP-to-CSP translator
+    : sugar -o arity=3 -translate csp -output output.csp input.csp
+  - SMT output (QF_LIA) in CSP-to-CSP translator
+    : sugar -o no_norm,no_reduce -translate smt -output output.smt2 input.csp
+  - Use cache in Tseitin transformation.
+    Cache size can be changed by "-o simp_cache=2000" (default 1000).
 * Version 2.1.0 [2013-08-24 Sat]
   - Bug fix when the given CSP is trivially unsatisfiable.
   - Code refactoring

@@ -15,6 +15,7 @@ import jp.kobe_u.sugar.csp.Clause;
 import jp.kobe_u.sugar.csp.HoldLiteral;
 import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerVariable;
+import jp.kobe_u.sugar.csp.LabelLiteral;
 import jp.kobe_u.sugar.csp.LinearSum;
 import jp.kobe_u.sugar.csp.Literal;
 import jp.kobe_u.sugar.csp.RelationLiteral;
@@ -53,8 +54,11 @@ public class Converter {
     public static boolean DECOMPOSE_GLOBAL_CARDINALITY_WITH_COSTS = true;
     public static boolean REPLACE_ARGUMENTS = false;
     public static boolean REDUCE_ARITY = true;
+    public static int MAX_ARITY = 0;
     public static int SPLITS = 2;
+    public static boolean USE_EQ = true;
     public static boolean ESTIMATE_SATSIZE = false; // bad
+    public static boolean ADD_GROUP_ID = false;
     
     public static List<ConverterHook> hooks = null;
     
@@ -299,7 +303,6 @@ public class Converter {
         } else if ((seq.isSequence(Expression.NE) && ! negative)
                 || (seq.isSequence(Expression.EQ) && negative)) {
             checkArity(seq, 2);
-            if (NORMALIZE_LINEARSUM)
             clauses.addAll(comparisonConverter.convertComp(seq.get(1), seq.get(2), "ne"));
         } else if ((seq.isSequence(Expression.LE) && ! negative)
                 || (seq.isSequence(Expression.GT) && negative)) {
@@ -381,13 +384,14 @@ public class Converter {
                 }
                 if (seq.isSequence(Expression.HOLD)) {
                     Clause clause = new Clause(new HoldLiteral(seq.get(1), negative));
-                    clauses = new ArrayList<Clause>();
+                    // clauses = new ArrayList<Clause>();
                     clauses.add(clause);
                     break;
                 } else if (definitionConverter.isPredicate(seq)) {
 					x = definitionConverter.convertPredicate(seq);
                 } else if (definitionConverter.isRelation(seq)) {
                     if (DECOMPOSE_RELATION) {
+                        // TODO Bug
                         RelationLiteral lit = (RelationLiteral)definitionConverter.convertRelation(seq, negative);
                         List<Expression> e = new ArrayList<Expression>();
                         e.add(Expression.AND);
@@ -430,6 +434,11 @@ public class Converter {
                     x = convertGlobal(seq, negative, clauses);
                     if (x == null)
                         break;
+                } else if (seq.isSequence(Expression.LABEL) && seq.matches("WI")) {
+                    int label = seq.get(1).integerValue();
+                    Literal lit = new LabelLiteral(label);
+                    clauses.add(new Clause(lit));
+                    break;
                 } else {
                     syntaxError(x);
                 }
@@ -499,7 +508,7 @@ public class Converter {
 		}
 	}
 
-	public void convertExpression(Expression x) throws SugarException {
+    public void convertExpression(Expression x) throws SugarException {
 		if (x.isSequence(Expression.DOMAIN_DEFINITION)) {
 		    definitionConverter.convertDomainDefinition((Sequence)x);
         } else if (x.isSequence(Expression.INT_DEFINITION)) {
@@ -510,17 +519,27 @@ public class Converter {
             definitionConverter.convertBoolDefinition((Sequence)x, false);
         } else if (x.isSequence(Expression.DBOOL_DEFINITION)) {
             definitionConverter.convertBoolDefinition((Sequence)x, true);
-		} else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
-		    definitionConverter.convertObjectiveDefinition((Sequence)x);
 		} else if (x.isSequence(Expression.PREDICATE_DEFINITION)) {
 		    definitionConverter.convertPredicateDefinition((Sequence)x);
 		} else if (x.isSequence(Expression.RELATION_DEFINITION)) {
 		    definitionConverter.convertRelationDefinition((Sequence)x);
+        } else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
+            definitionConverter.convertObjectiveDefinition((Sequence)x);
+        } else if (x.isSequence(Expression.GROUPS_DEFINITION)) {
+            definitionConverter.convertGroupsDefinition((Sequence)x);
 		} else {
 			convertConstraint(x);
 		}
 	}
 	
+    public void convert(Expression x) throws SugarException {
+        convertExpression(x);
+        while (extra.size() > 0) {
+            Expression x1 = extra.remove(0);
+            convertExpression(x1);
+        }
+    }
+    
 	public void convert(List<Expression> expressions) throws SugarException {
 		int n = expressions.size();
 		int percent = 10;

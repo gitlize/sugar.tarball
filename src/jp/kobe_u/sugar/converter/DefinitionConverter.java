@@ -73,14 +73,14 @@ public class DefinitionConverter {
         if (ranges.length == 0)
             throw new SugarException("Bad definition " + seq);
         if (ranges.length == 1)
-            return new IntegerDomain(ranges[0][0], ranges[0][1]);
+            return IntegerDomain.create(ranges[0][0], ranges[0][1]);
         SortedSet<Integer> d = new TreeSet<Integer>();
         for (int[] range : ranges) {
             for (int value = range[0]; value <= range[1]; value++) {
                 d.add(value);
             }
         }
-        return new IntegerDomain(d);
+        return IntegerDomain.create(d);
     }
     
     protected void convertDomainDefinition(Sequence seq) throws SugarException {
@@ -90,11 +90,11 @@ public class DefinitionConverter {
             name = seq.get(1).stringValue();
             int lb = seq.get(2).integerValue();
             int ub = seq.get(3).integerValue();
-            domain = new IntegerDomain(lb, ub);
+            domain = IntegerDomain.create(lb, ub);
         } else if (seq.matches("WWI")) {
             name = seq.get(1).stringValue();
             int lb = seq.get(2).integerValue();
-            domain = new IntegerDomain(lb, lb);
+            domain = IntegerDomain.create(lb, lb);
         } else if (seq.matches("WWS")) {
             name = seq.get(1).stringValue();
             domain = convertRanges((Sequence)seq.get(2));
@@ -118,11 +118,11 @@ public class DefinitionConverter {
             name = seq.get(1).stringValue();
             int lb = seq.get(2).integerValue();
             int ub = seq.get(3).integerValue();
-            domain = new IntegerDomain(lb, ub);
+            domain = IntegerDomain.create(lb, ub);
         } else if (seq.matches("WWI")) {
             name = seq.get(1).stringValue();
             int lb = seq.get(2).integerValue();
-            domain = new IntegerDomain(lb, lb);
+            domain = IntegerDomain.create(lb, lb);
         } else if (seq.matches("WWS")) {
             name = seq.get(1).stringValue();
             domain = convertRanges((Sequence)seq.get(2));
@@ -163,32 +163,6 @@ public class DefinitionConverter {
         v.setDominant(dominating);
         csp.add(v);
         boolMap.put(name, v);
-    }
-
-    protected void convertObjectiveDefinition(Sequence seq) throws SugarException {
-        Objective objective = null;
-        if (seq.matches("WWW*")) {
-            if (seq.get(1).equals(Expression.MINIMIZE)) {
-                objective = Objective.MINIMIZE;
-            } else if (seq.get(1).equals(Expression.MAXIMIZE)) {
-                objective = Objective.MAXIMIZE;
-            }
-        }
-        if (objective == null) {
-            throw new SugarException("Bad definition " + seq);
-        }
-        List<IntegerVariable> vs = new ArrayList<IntegerVariable>();
-        for (int i = 2; i < seq.length(); i++) {
-            String name = seq.get(i).stringValue();
-            if (name == null)
-                throw new SugarException("Bad definition " + seq);
-            IntegerVariable v = intMap.get(name);
-            if (v == null)
-                throw new SugarException("Unknown objective variable " + name);
-            vs.add(v);
-        }
-        csp.setObjectiveVariables(vs);
-        csp.setObjective(objective);
     }
 
     protected void convertPredicateDefinition(Sequence seq) throws SugarException {
@@ -251,5 +225,42 @@ public class DefinitionConverter {
             vs[i-1] = v;
         }
         return new RelationLiteral(rel.name, rel.arity, negative, rel.conflicts, rel.tuples, vs);
+    }
+
+    protected void convertObjectiveDefinition(Sequence seq) throws SugarException {
+        Objective objective = null;
+        if (seq.matches("WWW*")) {
+            if (seq.get(1).equals(Expression.MINIMIZE)) {
+                objective = Objective.MINIMIZE;
+            } else if (seq.get(1).equals(Expression.MAXIMIZE)) {
+                objective = Objective.MAXIMIZE;
+            }
+        }
+        if (objective == null) {
+            throw new SugarException("Bad definition " + seq);
+        }
+        List<IntegerVariable> vs = new ArrayList<IntegerVariable>();
+        for (int i = 2; i < seq.length(); i++) {
+            String name = seq.get(i).stringValue();
+            if (name == null)
+                throw new SugarException("Bad definition " + seq);
+            IntegerVariable v = intMap.get(name);
+            if (v == null)
+                throw new SugarException("Unknown objective variable " + name);
+            vs.add(v);
+        }
+        csp.setObjectiveVariables(vs);
+        csp.setObjective(objective);
+    }
+    
+    protected void convertGroupsDefinition(Sequence seq) throws SugarException {
+        Objective objective = null;
+        if (! seq.matches("WII")) {
+            throw new SugarException("Bad definition " + seq);
+        }
+        int groups = seq.get(1).integerValue();
+        int topWeight = seq.get(2).integerValue();
+        csp.setGroups(groups);
+        csp.setTopWeight(topWeight);
     }
 }
