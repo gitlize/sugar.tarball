@@ -189,7 +189,8 @@ public class DefinitionConverter {
     }
 
     protected boolean isPredicate(Sequence seq) {
-        return seq.length() > 0 && predicateMap.containsKey(seq.get(0).stringValue());
+        return seq.length() > 0 && seq.get(0).isString() &&
+                predicateMap.containsKey(seq.get(0).stringValue());
     }
     
     protected Expression convertPredicate(Sequence seq) throws SugarException {

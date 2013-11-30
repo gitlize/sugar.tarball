@@ -21,14 +21,14 @@ public abstract class IntegerDomain {
             return new IntegerDomainDiet(lb, ub);
         else
             return new IntegerDomainOld(lb, ub);
-	}
+    }
 
-	public static IntegerDomain create(SortedSet<Integer> domain) {
+    public static IntegerDomain create(SortedSet<Integer> domain) {
         if (USE_DIET_DOMAIN)
             return new IntegerDomainDiet(domain);
         else
             return new IntegerDomainOld(domain);
-	}
+    }
 
     public boolean isEmpty() {
         return size() == 0;

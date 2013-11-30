@@ -12,49 +12,49 @@ import jp.kobe_u.sugar.SugarException;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class ProductLiteral extends Literal {
-	private IntegerVariable v;
-	private IntegerVariable v1;
-	private IntegerVariable v2;
+    private IntegerVariable v;
+    private IntegerVariable v1;
+    private IntegerVariable v2;
 
-	public ProductLiteral(IntegerVariable v, IntegerVariable v1, IntegerVariable v2) {
-		this.v = v;
-		this.v1 = v1;
-		this.v2 = v2;
-	}
+    public ProductLiteral(IntegerVariable v, IntegerVariable v1, IntegerVariable v2) {
+        this.v = v;
+        this.v1 = v1;
+        this.v2 = v2;
+    }
 
-	@Override
-	public Set<IntegerVariable> getVariables() {
-		// TODO
-		return null;
-	}
+    @Override
+    public Set<IntegerVariable> getVariables() {
+        // TODO
+        return null;
+    }
 
-	@Override
-	public boolean isValid() throws SugarException {
-		return false;
-	}
+    @Override
+    public boolean isValid() throws SugarException {
+        return false;
+    }
 
-	@Override
-	public boolean isUnsatisfiable() throws SugarException {
-		return false;
-	}
-	
-	@Override
-	public int propagate() {
-		// TODO propagate
-		return 0;
-	}
+    @Override
+    public boolean isUnsatisfiable() throws SugarException {
+        return false;
+    }
+    
+    @Override
+    public int propagate() {
+        // TODO propagate
+        return 0;
+    }
 
-	@Override
-	public boolean isSatisfied() {
-		return v.getValue() == v1.getValue() * v2.getValue();
-	}
+    @Override
+    public boolean isSatisfied() {
+        return v.getValue() == v1.getValue() * v2.getValue();
+    }
 
-	@Override
-	public boolean isSimple() {
-		return false;
-	}
+    @Override
+    public boolean isSimple() {
+        return false;
+    }
 
-	@Override
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -92,8 +92,8 @@ public class ProductLiteral extends Literal {
     }
 
     @Override
-	public String toString() {
-		String s = "(eq " + v.getName() + " (mul " + v1.getName() + " " + v2.getName() + "))";
-		return s;
-	}
+    public String toString() {
+        String s = "(eq " + v.getName() + " (mul " + v1.getName() + " " + v2.getName() + "))";
+        return s;
+    }
 }

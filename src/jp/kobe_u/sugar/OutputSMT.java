@@ -324,7 +324,7 @@ public class OutputSMT implements OutputInterface {
     private void formatLiteral(Literal lit0) throws SugarException {
         if (lit0 instanceof HoldLiteral) {
             HoldLiteral lit = (HoldLiteral)lit0;
-            if (lit.getNegative())
+            if (lit.isNegative())
                 formatter.begin(SugarConstants.NOT);
             Expression x = lit.getExpression();
             if (x.isSequence(Expression.ALLDIFFERENT)) {
@@ -339,7 +339,7 @@ public class OutputSMT implements OutputInterface {
             } else {
                 format(x);
             }
-            if (lit.getNegative())
+            if (lit.isNegative())
                 formatter.end();
         } else if (lit0 instanceof BooleanLiteral) {
             BooleanLiteral lit = (BooleanLiteral)lit0;

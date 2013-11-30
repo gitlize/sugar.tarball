@@ -31,13 +31,13 @@ import jp.kobe_u.sugar.hook.ConverterHook;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class Converter {
-	public static int MAX_EQUIVMAP_SIZE = 1000;
-	public static long MAX_LINEARSUM_SIZE = 1024L;
-	// public static long MAX_LINEARSUM_SIZE = 2048L;
+    public static int MAX_EQUIVMAP_SIZE = 1000;
+    public static long MAX_LINEARSUM_SIZE = 1024L;
+    // public static long MAX_LINEARSUM_SIZE = 2048L;
     public static boolean OPT_PEEPHOLE = true;
     public static boolean OPT_PEEPHOLE_ABS = true;
-	public static boolean HINT_ALLDIFF_PIGEON = true;
-	public static boolean INCREMENTAL_PROPAGATION = true;
+    public static boolean HINT_ALLDIFF_PIGEON = true;
+    public static boolean INCREMENTAL_PROPAGATION = true;
     public static boolean LINEARIZE = true;
     public static boolean NORMALIZE_LINEARSUM = true;
     public static boolean DECOMPOSE_RELATION = false;
@@ -56,9 +56,10 @@ public class Converter {
     public static boolean REDUCE_ARITY = true;
     public static int MAX_ARITY = 0;
     public static int SPLITS = 2;
-    public static boolean USE_EQ = true;
+    public static boolean USE_EQ = false;
     public static boolean ESTIMATE_SATSIZE = false; // bad
     public static boolean ADD_GROUP_ID = false;
+    public static boolean HOLD_CONSTRAINTS = false;
     
     public static List<ConverterHook> hooks = null;
     
@@ -100,55 +101,55 @@ public class Converter {
         
     }
 
-	public CSP csp;
-	public DefinitionConverter definitionConverter;
-	public ComparisonConverter comparisonConverter;
+    public CSP csp;
+    public DefinitionConverter definitionConverter;
+    public ComparisonConverter comparisonConverter;
     public GlobalConverter globalConverter;
     public ExpressionOptimizer expressionOptimizer;
-	private List<Expression> extra;
+    private List<Expression> extra;
     private Map<Expression,IntegerVariable> equivMap;
-	
-	public Converter(CSP csp) {
-		this.csp = csp;
-		definitionConverter = new DefinitionConverter(this);
-		globalConverter = new GlobalConverter(this);
-		comparisonConverter = new ComparisonConverter(this);
-		expressionOptimizer = new ExpressionOptimizer(this);
-		extra = new ArrayList<Expression>();
+    
+    public Converter(CSP csp) {
+        this.csp = csp;
+        definitionConverter = new DefinitionConverter(this);
+        globalConverter = new GlobalConverter(this);
+        comparisonConverter = new ComparisonConverter(this);
+        expressionOptimizer = new ExpressionOptimizer(this);
+        extra = new ArrayList<Expression>();
         equivMap = new EquivMap();
-	}
-	
-	protected void addExtra(Expression x) {
-	    extra.add(x);
-	}
-	
-	protected IntegerVariable getEquivalence(Expression x) {
-	    return equivMap.get(x);
-	}
-	
-	protected void addEquivalence(IntegerVariable v, Expression x) {
+    }
+    
+    protected void addExtra(Expression x) {
+        extra.add(x);
+    }
+    
+    protected IntegerVariable getEquivalence(Expression x) {
+        return equivMap.get(x);
+    }
+    
+    protected void addEquivalence(IntegerVariable v, Expression x) {
         equivMap.put(x, v);
     }
 
-	public void syntaxError(String s) throws SugarException {
-		throw new SugarException("Syntax error " + s);
-	}
-	
-	public void syntaxError(Expression x) throws SugarException {
-		syntaxError(x.toString());
-	}
-	
-	public void checkArity(Expression x, int arity) throws SugarException {
-		if (! x.isSequence(arity)) {
-			syntaxError(x);
-		}
-	}
-	
-	public LinearSum convertFormula(Expression x) throws SugarException {
-	    return comparisonConverter.convertFormula(x);
-	}
+    public void syntaxError(String s) throws SugarException {
+        throw new SugarException("Syntax error " + s);
+    }
+    
+    public void syntaxError(Expression x) throws SugarException {
+        syntaxError(x.toString());
+    }
+    
+    public void checkArity(Expression x, int arity) throws SugarException {
+        if (! x.isSequence(arity)) {
+            syntaxError(x);
+        }
+    }
+    
+    public LinearSum convertFormula(Expression x) throws SugarException {
+        return comparisonConverter.convertFormula(x);
+    }
 
-	public IntegerVariable newIntegerVariable(IntegerDomain d, Expression x)
+    public IntegerVariable newIntegerVariable(IntegerDomain d, Expression x)
     throws SugarException {
         IntegerVariable v = new IntegerVariable(d);
         csp.add(v);
@@ -156,7 +157,7 @@ public class Converter {
         return v;
     }
     
-	public IntegerVariable toIntegerVariable(Expression x)
+    public IntegerVariable toIntegerVariable(Expression x)
     throws SugarException {
         LinearSum e = comparisonConverter.convertFormula(x);
         IntegerVariable v;
@@ -172,40 +173,40 @@ public class Converter {
         return v;
     }
     
-	private List<Clause> convertDisj(Sequence seq, boolean negative) throws SugarException {
-		List<Clause> clauses = null;
-		if (seq.length() == 1) {
-			clauses = new ArrayList<Clause>();
-			clauses.add(new Clause());
-		} else if (seq.length() == 2) {
-			clauses = convertConstraint(seq.get(1), negative);
-		} else {
-			clauses = new ArrayList<Clause>();
-			Clause clause = new Clause();
-			// clause.setComment(seq.toString());
-			clauses.add(clause);
-			for (int i = 1; i < seq.length(); i++) {
-				List<Clause> clauses0 = convertConstraint(seq.get(i), negative);
-				if (clauses0.size() == 0) {
-					return clauses0;
-				} else if (clauses0.size() == 1) {
-					clause.addAll(clauses0.get(0).getLiterals());
-				} else {
-					BooleanVariable v = new BooleanVariable();
-					csp.add(v);
-					// v.setComment(seq.toString());
-					BooleanLiteral v0 = new BooleanLiteral(v, false);
-					BooleanLiteral v1 = new BooleanLiteral(v, true);
-					clause.add(v0);
-					for (Clause clause0 : clauses0) {
-						clause0.add(v1);
-					}
-					clauses.addAll(clauses0);
-				}
-			}
-		}
-		return clauses;
-	}
+    private List<Clause> convertDisj(Sequence seq, boolean negative) throws SugarException {
+        List<Clause> clauses = null;
+        if (seq.length() == 1) {
+            clauses = new ArrayList<Clause>();
+            clauses.add(new Clause());
+        } else if (seq.length() == 2) {
+            clauses = convertConstraint(seq.get(1), negative);
+        } else {
+            clauses = new ArrayList<Clause>();
+            Clause clause = new Clause();
+            // clause.setComment(seq.toString());
+            clauses.add(clause);
+            for (int i = 1; i < seq.length(); i++) {
+                List<Clause> clauses0 = convertConstraint(seq.get(i), negative);
+                if (clauses0.size() == 0) {
+                    return clauses0;
+                } else if (clauses0.size() == 1) {
+                    clause.addAll(clauses0.get(0).getLiterals());
+                } else {
+                    BooleanVariable v = new BooleanVariable();
+                    csp.add(v);
+                    // v.setComment(seq.toString());
+                    BooleanLiteral v0 = new BooleanLiteral(v, false);
+                    BooleanLiteral v1 = new BooleanLiteral(v, true);
+                    clause.add(v0);
+                    for (Clause clause0 : clauses0) {
+                        clause0.add(v1);
+                    }
+                    clauses.addAll(clauses0);
+                }
+            }
+        }
+        return clauses;
+    }
 
     public void convertAtom(Expression x, boolean negative, List<Clause> clauses) throws SugarException {
         if (x.isInteger()) {
@@ -254,7 +255,7 @@ public class Converter {
         }
         return x;
     }
-	
+    
     /*
     private Expression convertComparison0(Sequence seq, boolean negative, List<Clause> clauses) throws SugarException {
         Expression x = null;
@@ -356,9 +357,9 @@ public class Converter {
         return x;
     }
     
-	private List<Clause> convertConstraint(Expression x, boolean negative) throws SugarException {
-		List<Clause> clauses = new ArrayList<Clause>();
-		while (true) {
+    private List<Clause> convertConstraint(Expression x, boolean negative) throws SugarException {
+        List<Clause> clauses = new ArrayList<Clause>();
+        while (true) {
             if (hooks != null) {
                 Expression x1 = null;
                 for (ConverterHook hook : hooks) {
@@ -370,11 +371,11 @@ public class Converter {
                 if (x1 == null)
                     break;
             }
-			if (x.isAtom()) {
-			    convertAtom(x, negative, clauses);
-			    break;
-			} else {
-				Sequence seq = (Sequence)x;
+            if (x.isAtom()) {
+                convertAtom(x, negative, clauses);
+                break;
+            } else {
+                Sequence seq = (Sequence)x;
                 if (OPT_PEEPHOLE) {
                     Expression y = expressionOptimizer.peephole(seq, negative);
                     if (y != null) {
@@ -388,7 +389,7 @@ public class Converter {
                     clauses.add(clause);
                     break;
                 } else if (definitionConverter.isPredicate(seq)) {
-					x = definitionConverter.convertPredicate(seq);
+                    x = definitionConverter.convertPredicate(seq);
                 } else if (definitionConverter.isRelation(seq)) {
                     if (DECOMPOSE_RELATION) {
                         // TODO Bug
@@ -442,75 +443,54 @@ public class Converter {
                 } else {
                     syntaxError(x);
                 }
-			}
-		}
-		return clauses;
-	}
+            }
+        }
+        return clauses;
+    }
 
-	/* TODO
-	private List<Clause> simplify(Clause clause) throws SugarException {
-		List<Literal> literals = clause.getLiterals();
-		List<Clause> newClauses = new ArrayList<Clause>();
-		clause = new Clause();
-		int complex = 0;
-		for (Literal literal : literals) {
-			if (literal.isSimple()) {
-				clause.add(literal);
-			} else {
-				complex++;
-				if (complex == 1) {
-					clause.add(literal);
-				} else {
-					BooleanVariable p = new BooleanVariable();
-					csp.add(p);
-					Literal posLiteral = new BooleanLiteral(p, false);
-					Literal negLiteral = new BooleanLiteral(p, true);
-					Clause newClause = new Clause();
-					newClause.add(negLiteral);
-					newClause.add(literal);
-					newClauses.add(newClause);
-					clause.add(posLiteral);
-				}
-			}
-		}
-		newClauses.add(clause);
-		return newClauses;
-	}
-	
-	private List<Clause> simplify(List<Clause> clauses) throws SugarException {
-		List<Clause> newClauses = new ArrayList<Clause>();
-		for (Clause clause : clauses) {
-			if (clause.isSimple()) {
-				newClauses.add(clause);
-			} else {
-				newClauses.addAll(simplify(clause));
-			}
-		}
-		return newClauses;
-	}
-	*/
+    protected void convertConstraint(Expression x) throws SugarException {
+        List<Clause> clauses = convertConstraint(x, false);
+        // clauses = simplify(clauses);
+        if (clauses.size() > 0) {
+            if (x.getComment() == null) {
+                clauses.get(0).setComment(x.toString());
+            } else {
+                clauses.get(0).setComment(x.getComment());
+            }
+        }
+        for (Clause clause : clauses) {
+            csp.add(clause);
+            if (INCREMENTAL_PROPAGATION) {
+                clause.propagate();
+            }
+        }
+    }
 
-	protected void convertConstraint(Expression x) throws SugarException {
-		List<Clause> clauses = convertConstraint(x, false);
-		// clauses = simplify(clauses);
-		if (clauses.size() > 0) {
-			if (x.getComment() == null) {
-				clauses.get(0).setComment(x.toString());
-			} else {
-				clauses.get(0).setComment(x.getComment());
-			}
-		}
-		for (Clause clause : clauses) {
-			csp.add(clause);
-			if (INCREMENTAL_PROPAGATION) {
-				clause.propagate();
-			}
-		}
-	}
-
+    public Expression convertHold(Expression x) throws SugarException {
+        while (true) {
+            if (x.isAtom())
+                break;
+            Sequence seq = (Sequence)x;
+            if (definitionConverter.isPredicate(seq)) {
+                x = definitionConverter.convertPredicate(seq);
+                continue;
+            }
+            Expression[] xs = new Expression[seq.length()];
+            boolean modified = false;
+            for (int i = 0; i < xs.length; i++) {
+                xs[i] = convertHold(seq.get(i));
+                modified = modified || xs[i].equals(seq.get(i));
+            }
+            if (modified)
+                x = Expression.create(xs);
+            break;
+        }
+        return x;
+    }
+    
     public void convertExpression(Expression x) throws SugarException {
-		if (x.isSequence(Expression.DOMAIN_DEFINITION)) {
-		    definitionConverter.convertDomainDefinition((Sequence)x);
+        if (x.isSequence(Expression.DOMAIN_DEFINITION)) {
+            definitionConverter.convertDomainDefinition((Sequence)x);
         } else if (x.isSequence(Expression.INT_DEFINITION)) {
             definitionConverter.convertIntDefinition((Sequence)x, false);
         } else if (x.isSequence(Expression.DINT_DEFINITION)) {
@@ -519,19 +499,24 @@ public class Converter {
             definitionConverter.convertBoolDefinition((Sequence)x, false);
         } else if (x.isSequence(Expression.DBOOL_DEFINITION)) {
             definitionConverter.convertBoolDefinition((Sequence)x, true);
-		} else if (x.isSequence(Expression.PREDICATE_DEFINITION)) {
-		    definitionConverter.convertPredicateDefinition((Sequence)x);
-		} else if (x.isSequence(Expression.RELATION_DEFINITION)) {
-		    definitionConverter.convertRelationDefinition((Sequence)x);
+        } else if (x.isSequence(Expression.PREDICATE_DEFINITION)) {
+            definitionConverter.convertPredicateDefinition((Sequence)x);
+        } else if (x.isSequence(Expression.RELATION_DEFINITION)) {
+            definitionConverter.convertRelationDefinition((Sequence)x);
         } else if (x.isSequence(Expression.OBJECTIVE_DEFINITION)) {
             definitionConverter.convertObjectiveDefinition((Sequence)x);
         } else if (x.isSequence(Expression.GROUPS_DEFINITION)) {
             definitionConverter.convertGroupsDefinition((Sequence)x);
-		} else {
-			convertConstraint(x);
-		}
-	}
-	
+        } else {
+            if (HOLD_CONSTRAINTS) {
+                x = convertHold(x);
+                convertConstraint(Expression.create(Expression.HOLD, x));
+            } else {
+                convertConstraint(x);
+            }
+        }
+    }
+    
     public void convert(Expression x) throws SugarException {
         convertExpression(x);
         while (extra.size() > 0) {
@@ -540,26 +525,26 @@ public class Converter {
         }
     }
     
-	public void convert(List<Expression> expressions) throws SugarException {
-		int n = expressions.size();
-		int percent = 10;
-		int count = 0;
-		for (Expression x : expressions) {
-			convertExpression(x);
-			count++;
-			if ((100*count)/n >= percent) {
-				Logger.fine("converted " + count + " (" + percent + "%) expressions");
-				percent += 10;
-			}
-		}
-		while (extra.size() > 0) {
-			Expression x = extra.remove(0);
-			convertExpression(x);
-			count++;
-			if (count % 1000 == 0) {
-				Logger.fine("converted " + count + " extra expressions, remaining " + extra.size());
-			}
-		}
-	}
-	
+    public void convert(List<Expression> expressions) throws SugarException {
+        int n = expressions.size();
+        int percent = 10;
+        int count = 0;
+        for (Expression x : expressions) {
+            convertExpression(x);
+            count++;
+            if ((100*count)/n >= percent) {
+                Logger.fine("converted " + count + " (" + percent + "%) expressions");
+                percent += 10;
+            }
+        }
+        while (extra.size() > 0) {
+            Expression x = extra.remove(0);
+            convertExpression(x);
+            count++;
+            if (count % 1000 == 0) {
+                Logger.fine("converted " + count + " extra expressions, remaining " + extra.size());
+            }
+        }
+    }
+    
 }

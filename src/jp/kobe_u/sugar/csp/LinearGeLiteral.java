@@ -16,17 +16,17 @@ import jp.kobe_u.sugar.encoder.Problem;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class LinearGeLiteral extends LinearLiteral {
-	/**
-	 * Constructs a new comparison literal of given linear expression.
-	 * @param linearSum the linear expression
-	 */
-	public LinearGeLiteral(LinearSum linearSum) {
-	    super(linearSum);
-	    cmp = "ge";
-	}
-	
-	@Override
-	public int[] getBound(IntegerVariable v) throws SugarException {
+    /**
+     * Constructs a new comparison literal of given linear expression.
+     * @param linearSum the linear expression
+     */
+    public LinearGeLiteral(LinearSum linearSum) {
+        super(linearSum);
+        cmp = "ge";
+    }
+    
+    @Override
+    public int[] getBound(IntegerVariable v) throws SugarException {
         IntegerDomain d = v.getDomain();
         int lb0 = d.getLowerBound();
         int ub0 = d.getUpperBound();
@@ -42,34 +42,34 @@ public class LinearGeLiteral extends LinearLiteral {
         }
         if (lb > ub)
             return null;
-		return new int[] { lb, ub };
-	}
+        return new int[] { lb, ub };
+    }
 
-	@Override
-	public boolean isSimple() {
+    @Override
+    public boolean isSimple() {
         return linearSum.isSimple();
-	}
-	
-	@Override
-	public boolean isValid() throws SugarException {
+    }
+    
+    @Override
+    public boolean isValid() throws SugarException {
         return linearSum.getDomain().getLowerBound() >= 0;
-	}
-	
-	@Override
-	public boolean isUnsatisfiable() throws SugarException {
+    }
+    
+    @Override
+    public boolean isUnsatisfiable() throws SugarException {
         return linearSum.getDomain().getUpperBound() < 0;
-	}
-	
-	@Override
-	public int propagate() throws SugarException {
-		if (linearSum.size() == 0) {
-			return 0;
-		}
-		int removed = 0;
-		for (IntegerVariable v : linearSum.getCoef().keySet()) {
-	        IntegerDomain d = v.getDomain();
-	        int lb = d.getLowerBound();
-	        int ub = d.getUpperBound();
+    }
+    
+    @Override
+    public int propagate() throws SugarException {
+        if (linearSum.size() == 0) {
+            return 0;
+        }
+        int removed = 0;
+        for (IntegerVariable v : linearSum.getCoef().keySet()) {
+            IntegerDomain d = v.getDomain();
+            int lb = d.getLowerBound();
+            int ub = d.getUpperBound();
             int a = linearSum.getA(v);
             if (a > 0) {
                 IntegerDomain d1 = linearSum.getDomainExcept(v).neg().div(a);
@@ -82,16 +82,16 @@ public class LinearGeLiteral extends LinearLiteral {
                 ub = d1.getUpperBound();
                 removed += v.bound(lb, ub);
             }
-		}
-		return removed;
-	}
+        }
+        return removed;
+    }
 
-	/* (non-Javadoc)
-	 * @see Literal#isSatisfied()
-	 */
-	@Override
-	public boolean isSatisfied() {
-		return linearSum.getValue() == 0;
-	}    
-	
+    /* (non-Javadoc)
+     * @see Literal#isSatisfied()
+     */
+    @Override
+    public boolean isSatisfied() {
+        return linearSum.getValue() == 0;
+    }    
+    
 }

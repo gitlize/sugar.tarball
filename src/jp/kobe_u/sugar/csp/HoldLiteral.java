@@ -14,53 +14,53 @@ public class HoldLiteral extends Literal {
     private Expression expr;
     private boolean negative;
 
-	public HoldLiteral(Expression expr, boolean negative) {
+    public HoldLiteral(Expression expr, boolean negative) {
         this.expr = expr;
         this.negative = negative;
     }
-	
-	public Expression getExpression() {
+    
+    public Expression getExpression() {
         return expr;
-	}
+    }
 
-    public boolean getNegative() {
+    public boolean isNegative() {
         return negative;
     }
 
     @Override
-	public Set<IntegerVariable> getVariables() {
-		// TODO
-		return null;
-	}
+    public Set<IntegerVariable> getVariables() {
+        // TODO
+        return null;
+    }
 
-	@Override
-	public boolean isSimple() {
-		return false;
-	}
+    @Override
+    public boolean isSimple() {
+        return false;
+    }
 
-	@Override
-	public boolean isValid() throws SugarException {
-		return false;
-	}
+    @Override
+    public boolean isValid() throws SugarException {
+        return false;
+    }
 
-	@Override
-	public boolean isUnsatisfiable() throws SugarException {
-		return false;
-	}
-	
-	@Override
-	public int propagate() {
-		// TODO propagate
-		return 0;
-	}
+    @Override
+    public boolean isUnsatisfiable() throws SugarException {
+        return false;
+    }
+    
+    @Override
+    public int propagate() {
+        // TODO propagate
+        return 0;
+    }
 
-	@Override
-	public boolean isSatisfied() {
-		// TODO isSatisfied
-		return false;
-	}
+    @Override
+    public boolean isSatisfied() {
+        // TODO isSatisfied
+        return false;
+    }
 
-	@Override
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -89,11 +89,11 @@ public class HoldLiteral extends Literal {
     }
 
     @Override
-	public String toString() {
-	    if (negative)
-	        return "(not " + expr.toString() + ")";
-	    else
-	        return expr.toString();
-	}
+    public String toString() {
+        if (negative)
+            return "(not " + expr.toString() + ")";
+        else
+            return expr.toString();
+    }
 
 }

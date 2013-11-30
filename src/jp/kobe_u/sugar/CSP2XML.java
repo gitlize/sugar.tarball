@@ -18,28 +18,28 @@ import jp.kobe_u.sugar.expression.Parser;
  */
 /* TODO Under construction */
 public class CSP2XML {
-	private static int debug = 0;
+    private static int debug = 0;
     private String cspFileName;
-	private String xmlFileName;
-	private boolean prolog;
-	private List<Expression> expressions;
-	
-	/**
-	 * Constructs a CSP to XCSP converter.
+    private String xmlFileName;
+    private boolean prolog;
+    private List<Expression> expressions;
+    
+    /**
+     * Constructs a CSP to XCSP converter.
      * @param cspFileName
-	 * @param xmlFileName
-	 */
-	public CSP2XML(String cspFileName, String xmlFileName, boolean prolog) {
+     * @param xmlFileName
+     */
+    public CSP2XML(String cspFileName, String xmlFileName, boolean prolog) {
         this.cspFileName = cspFileName;
-		this.xmlFileName = xmlFileName;
-		this.prolog = prolog;
-	}
+        this.xmlFileName = xmlFileName;
+        this.prolog = prolog;
+    }
 
-	private void convert() {
-	    
-	}
-	
-	private void load() throws IOException {
+    private void convert() {
+        
+    }
+    
+    private void load() throws IOException {
         Logger.fine("Parsing " + cspFileName);
         InputStream in;
         if (cspFileName.endsWith(".gz")) {
@@ -52,18 +52,18 @@ public class CSP2XML {
         expressions = parser.parse();
         Logger.info("parsed " + expressions.size() + " expressions");
         reader.close();
-	}
-	
-	/**
-	 * Main program of CSP2XCSP.
-	 * @param args
-	 */
-	public static void main(String[] args) {
-	    boolean prolog = false;
-		int i = 0;
-		while (i < args.length) {
-			if (args[i].equals("-v") || args[i].equals("-verbose")) {
-				Logger.verboseLevel++;
+    }
+    
+    /**
+     * Main program of CSP2XCSP.
+     * @param args
+     */
+    public static void main(String[] args) {
+        boolean prolog = false;
+        int i = 0;
+        while (i < args.length) {
+            if (args[i].equals("-v") || args[i].equals("-verbose")) {
+                Logger.verboseLevel++;
             } else if (args[i].equals("-prolog")) {
                 prolog = true;
             } else if (args[i].equals("-debug") && i + 1 < args.length) {
@@ -71,25 +71,25 @@ public class CSP2XML {
                 i++;
             } else if (args[i].equals("-option") && i + 1 < args.length) {
                 i++;
-			} else if (! args[i].startsWith("-")) {
-				break;
-			}
-			i++;
-		}
-		int n = args.length - i;
-		if (n != 2) {
-			System.out.println("Usage : java CSP2XML [-v] cspFileName xmlFileName");
-			System.exit(1);
-		}
+            } else if (! args[i].startsWith("-")) {
+                break;
+            }
+            i++;
+        }
+        int n = args.length - i;
+        if (n != 2) {
+            System.out.println("Usage : java CSP2XML [-v] cspFileName xmlFileName");
+            System.exit(1);
+        }
         String cspFileName = args[i];
-		String xmlFileName = args[i + 1];
-		try {
-			CSP2XML csp2xml = new CSP2XML(cspFileName, xmlFileName, prolog);
-			csp2xml.load();
-			csp2xml.convert();
-		} catch (IOException e) {
-			System.out.println("c ERROR Exception " + e.getMessage());
-			e.printStackTrace();
-		}
-	}
+        String xmlFileName = args[i + 1];
+        try {
+            CSP2XML csp2xml = new CSP2XML(cspFileName, xmlFileName, prolog);
+            csp2xml.load();
+            csp2xml.convert();
+        } catch (IOException e) {
+            System.out.println("c ERROR Exception " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

@@ -20,40 +20,40 @@ import jp.kobe_u.sugar.Logger;
  * @author Naoyuki Tamura
  */
 public class Parser {
-	private static Map<String,Expression> conv;
-	
-	static {
-		conv = new HashMap<String,Expression>();
-		conv.put("!",  Expression.NOT);
-		conv.put("&&", Expression.AND);
-		conv.put("||", Expression.OR);
-		conv.put("=>", Expression.IMP);
-		conv.put("=",  Expression.EQ);
-		conv.put("!=", Expression.NE);
-		conv.put("<=", Expression.LE);
-		conv.put("<",  Expression.LT);
-		conv.put(">=", Expression.GE);
-		conv.put(">",  Expression.GT);
-		conv.put("+",  Expression.ADD);
-		conv.put("-",  Expression.SUB);
-		conv.put("*",  Expression.MUL);
-		conv.put("/",  Expression.DIV);
-		conv.put("%",  Expression.MOD);
-		conv.put("wsum", Expression.WEIGHTEDSUM);
-	}
-	
+    private static Map<String,Expression> conv;
+    
+    static {
+        conv = new HashMap<String,Expression>();
+        conv.put("!",  Expression.NOT);
+        conv.put("&&", Expression.AND);
+        conv.put("||", Expression.OR);
+        conv.put("=>", Expression.IMP);
+        conv.put("=",  Expression.EQ);
+        conv.put("!=", Expression.NE);
+        conv.put("<=", Expression.LE);
+        conv.put("<",  Expression.LT);
+        conv.put(">=", Expression.GE);
+        conv.put(">",  Expression.GT);
+        conv.put("+",  Expression.ADD);
+        conv.put("-",  Expression.SUB);
+        conv.put("*",  Expression.MUL);
+        conv.put("/",  Expression.DIV);
+        conv.put("%",  Expression.MOD);
+        conv.put("wsum", Expression.WEIGHTEDSUM);
+    }
+    
     private BufferedReader reader;
     private boolean prolog;
-	private StreamTokenizer st;
+    private StreamTokenizer st;
 
-	/**
-	 * Constructs a new parser.
-	 * @param reader an input reader
-	 */
+    /**
+     * Constructs a new parser.
+     * @param reader an input reader
+     */
     public Parser(BufferedReader reader, boolean prolog) {
-	    this.reader = reader;
-	    this.prolog = prolog;
-	}
+        this.reader = reader;
+        this.prolog = prolog;
+    }
 
     public Parser(BufferedReader reader) {
         this(reader, false);
@@ -240,30 +240,30 @@ public class Parser {
             return parseCSP();
     }
     
-	/**
-	 * Test main program for Parser class.
-	 * 
-	 * @param args the command line arguments
-	 */
-	public static void main(String[] args) {
-		if (args.length != 1) {
-			System.out.println("Usage : java Parser file");
-			System.exit(1);
-		}
-		String fileName = args[0];
-		try {
-			BufferedReader reader;
-			reader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(fileName), "UTF-8"));
-			Parser parser = new Parser(reader);
-			List<Expression> expressions = parser.parse();
-			for (Expression x : expressions) {
-				System.out.println(x);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
+    /**
+     * Test main program for Parser class.
+     * 
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        if (args.length != 1) {
+            System.out.println("Usage : java Parser file");
+            System.exit(1);
+        }
+        String fileName = args[0];
+        try {
+            BufferedReader reader;
+            reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(fileName), "UTF-8"));
+            Parser parser = new Parser(reader);
+            List<Expression> expressions = parser.parse();
+            for (Expression x : expressions) {
+                System.out.println(x);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
 }

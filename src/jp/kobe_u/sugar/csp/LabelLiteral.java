@@ -21,33 +21,33 @@ public class LabelLiteral extends Literal {
         return label;
     }
 
-	@Override
-	public boolean isSimple() {
-		return true;
-	}
+    @Override
+    public boolean isSimple() {
+        return true;
+    }
 
-	@Override
-	public boolean isValid() throws SugarException {
-		return false;
-	}
+    @Override
+    public boolean isValid() throws SugarException {
+        return false;
+    }
 
-	@Override
-	public boolean isUnsatisfiable() throws SugarException {
-		return false;
-	}
-	
-	@Override
-	public int propagate() {
-		return 0;
-	}
+    @Override
+    public boolean isUnsatisfiable() throws SugarException {
+        return false;
+    }
+    
+    @Override
+    public int propagate() {
+        return 0;
+    }
 
-	@Override
-	public boolean isSatisfied() {
-		// TODO isSatisfied
-		return false;
-	}
+    @Override
+    public boolean isSatisfied() {
+        // TODO isSatisfied
+        return false;
+    }
 
-	@Override
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -70,8 +70,8 @@ public class LabelLiteral extends Literal {
     }
 
     @Override
-	public String toString() {
-	    return "(label " + label + ")";
-	}
+    public String toString() {
+        return "(label " + label + ")";
+    }
 
 }

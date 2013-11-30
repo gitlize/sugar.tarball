@@ -194,22 +194,30 @@ public class GlobalConverter {
     }
 
     protected Expression convertElement(Sequence seq) throws SugarException {
-        converter.checkArity(seq, 3);
-        if (! seq.get(2).isSequence()) {
+        if (! seq.isSequence(3) && ! seq.isSequence(4))
             converter.syntaxError(seq);
-        }
+        if (! seq.get(2).isSequence())
+            converter.syntaxError(seq);
         if (! Converter.DECOMPOSE_ELEMENT)
             return seq.hold();
         Expression x1 = seq.get(1);
         Sequence seq2 = (Sequence) seq.get(2);
-        Expression x3 = seq.get(3);
+        Expression op = Expression.EQ;
+        Expression x3;
+        if (seq.isSequence(3)) {
+            x3 = seq.get(3);
+        } else {
+            op = seq.get(3);
+            x3 = seq.get(4);
+        }
         int n = seq2.length();
         List<Expression> xs = new ArrayList<Expression>();
         xs.add(Expression.AND);
         xs.add(x1.gt(Expression.ZERO));
         xs.add(x1.le(Expression.create(n)));
         for (int i = 0; i < n; i++) {
-            xs.add((x1.eq(Expression.create(i + 1))).imp(x3.eq(seq2.get(i))));
+            Expression x = Expression.create(op, seq2.get(i), x3);
+            xs.add((x1.eq(Expression.create(i + 1))).imp(x));
         }
         Expression x = Expression.create(xs);
         return x;
