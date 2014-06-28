@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
 import jp.kobe_u.sugar.converter.Converter;
+import jp.kobe_u.sugar.converter.Simplifier;
 import jp.kobe_u.sugar.csp.BooleanVariable;
 import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.CSP.Objective;
@@ -28,6 +29,9 @@ import jp.kobe_u.sugar.expression.Expression;
 import jp.kobe_u.sugar.expression.Parser;
 import jp.kobe_u.sugar.expression.Sequence;
 import jp.kobe_u.sugar.hook.ConverterHook;
+import jp.kobe_u.sugar.pb.PBEncoder;
+import jp.kobe_u.sugar.pb.PBFileProblem;
+import jp.kobe_u.sugar.pb.PBProblem;
 
 /**
  * SugarMain main class.
@@ -40,8 +44,10 @@ public class SugarMain {
     static boolean weightedCSP = false;
     static boolean competition = false;
     static boolean incremental = false;
+    static boolean pb = false;
     static boolean propagation = true;
     static boolean simplify_clauses = true;
+    static PBEncoder.Encoding pbEncoding = null; 
     public static int debug = 0;
 
     private List<Expression> toMaxCSP(List<Expression> expressions0) throws SugarException {
@@ -240,7 +246,8 @@ public class SugarMain {
         if (simplify_clauses) {
             // Simplification
             Logger.fine("Simplifing CSP clauses by introducing new Boolean variables");
-            csp.simplify();
+            Simplifier simplifier = new Simplifier(csp);
+            simplifier.simplify();
             Logger.info("CSP : " + csp.summary());
             if (debug > 0) {
                 csp.output(System.out, "c ");
@@ -382,6 +389,139 @@ public class SugarMain {
         }
     }
 
+    public void encodePB(String cspFileName, String pbFileName, String mapFileName)
+    throws SugarException, IOException {
+        translate(cspFileName);
+        if (csp.isUnsatisfiable()) {
+            return;
+        }
+        Logger.fine("Encoding CSP to PB : " + pbFileName);
+        PBProblem problem = new PBFileProblem(pbFileName);
+        PBEncoder pbEncoder = new PBEncoder(csp, problem, pbEncoding);
+        pbEncoder.encode();
+        Logger.fine("Writing map file : " + mapFileName);
+        pbEncoder.outputMap(mapFileName);
+        Logger.status();
+        Logger.info("PB : " + problem.summary());
+    }
+    
+    public void decodePB(String outFileName, String mapFileName)
+    throws SugarException, IOException {
+        Logger.fine("Decoding " + outFileName);
+        CSP csp = new CSP();
+        List<String> objectiveVariableNames = null;
+        BufferedReader rd = new BufferedReader(
+                new InputStreamReader(new FileInputStream(mapFileName), "UTF-8"));
+        while (true) {
+            String line = rd.readLine();
+            if (line == null)
+                break;
+            String[] s = line.split("\\s+");
+            if (s[0].equals("objective")) {
+                if (s[1].equals(SugarConstants.MINIMIZE)) {
+                    csp.setObjective(Objective.MINIMIZE);
+                } else if (s[1].equals(SugarConstants.MAXIMIZE)) {
+                    csp.setObjective(Objective.MAXIMIZE);
+                }
+                objectiveVariableNames = new ArrayList<String>();
+                for (int i = 2; i < s.length; i++)
+                    objectiveVariableNames.add(s[i]);
+            } else if (s[0].equals("int")) {
+                String name = s[1];
+                int code = Integer.parseInt(s[2]);
+                IntegerDomain domain = null;
+                if (s.length == 4) {
+                    int lb;
+                    int ub;
+                    int pos = s[3].indexOf("..");
+                    if (pos < 0) {
+                        lb = ub = Integer.parseInt(s[3]);
+                    } else {
+                        lb = Integer.parseInt(s[3].substring(0, pos));
+                        ub = Integer.parseInt(s[3].substring(pos+2));
+                    }
+                    domain = IntegerDomain.create(lb, ub);
+                } else {
+                    SortedSet<Integer> d = new TreeSet<Integer>();
+                    for (int i = 3; i < s.length; i++) {
+                        int lb;
+                        int ub;
+                        int pos = s[i].indexOf("..");
+                        if (pos < 0) {
+                            lb = ub = Integer.parseInt(s[i]);
+                        } else {
+                            lb = Integer.parseInt(s[i].substring(0, pos));
+                            ub = Integer.parseInt(s[i].substring(pos+2));
+                        }
+                        for (int value = lb; value <= ub; value++) {
+                            d.add(value);
+                        }
+                    }
+                    domain = IntegerDomain.create(d);
+                }
+                IntegerVariable v = new IntegerVariable(name, domain);
+                v.setCode(code);
+                csp.add(v);
+            } else if (s[0].equals("bool")) {
+                // TODO
+                String name = s[1];
+                int code = Integer.parseInt(s[2]);
+                BooleanVariable v = new BooleanVariable(name);
+                v.setCode(code);
+                csp.add(v);
+            }
+        }
+        rd.close();
+        if (objectiveVariableNames != null) {
+            List<IntegerVariable> vs = new ArrayList<IntegerVariable>();
+            for (String name : objectiveVariableNames) {
+                IntegerVariable v = csp.getIntegerVariable(name);
+                if (v == null)
+                    throw new SugarException("Unknown objective variable " + name);
+                vs.add(v);
+            }
+            csp.setObjectiveVariables(vs);
+        }
+        PBEncoder pbEncoder = new PBEncoder(csp, null, pbEncoding);
+        if (pbEncoder.decode(outFileName)) {
+            if (csp.getObjectiveVariables() == null) {
+                Logger.println("s SATISFIABLE");
+            } else {
+                String s = "o";
+                for (IntegerVariable v : csp.getObjectiveVariables()) {
+                    String name = v.getName();
+                    int value = v.getValue();
+                    Logger.println("c OBJECTIVE " + name + " " + value);
+                    s += " " + value;
+                }
+                Logger.println(s);
+            }
+            if (competition) {
+                Logger.print("v");
+                for (IntegerVariable v : csp.getIntegerVariables()) {
+                    if (! v.isAux() && ! v.getName().startsWith("_")) {
+                        Logger.print(" " + v.getValue());
+                    }
+                }
+                Logger.println("");
+            } else {
+                for (IntegerVariable v : csp.getIntegerVariables()) {
+                    if (! v.isAux() && ! v.getName().startsWith("_")) {
+                        Logger.println("a " + v.getName() + "\t" + v.getValue());
+                    }
+                }
+                for (BooleanVariable v : csp.getBooleanVariables()) {
+                    if (! v.isAux() && ! v.getName().startsWith("_")) {
+                        Logger.println("a " + v.getName() + "\t" + v.getValue());
+                    }
+                }
+                Logger.println("a");
+            }
+        } else {
+            Logger.println("s UNSATISFIABLE");
+        }
+    }
+
     public void outputCSP(String inputFileName, String outputFileName, String format, String outputHook)
             throws SugarException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         Logger.info("Translate CSP to " + format);
@@ -475,6 +615,23 @@ public class SugarMain {
             int size = Integer.parseInt(opt.substring(n));
             IntegerDomainOld.MAX_SET_SIZE = size;
             IntegerDomainDiet.MAX_SET_SIZE = size;
+        } else if (opt.startsWith("pb_")) {
+            pb = true;
+            if (opt.equals("pb_b")) {
+                pbEncoding = PBEncoder.Encoding.COMPACT_ORDER_ENCODING;
+                PBEncoder.BASE = 2;
+            } else if (opt.equals("pb_d")) {
+                pbEncoding = PBEncoder.Encoding.DIRECT_ENCODING;
+            } else if (opt.equals("pb_o")) {
+                pbEncoding = PBEncoder.Encoding.ORDER_ENCODING;
+                PBEncoder.ENCODING_OPTION = 1;
+            } else if (opt.matches("pb_o=\\d+")) {
+                pbEncoding = PBEncoder.Encoding.ORDER_ENCODING;
+                PBEncoder.ENCODING_OPTION = Integer.parseInt(opt.substring(5));
+            } else if (opt.matches("pb_c=\\d+")) {
+                pbEncoding = PBEncoder.Encoding.COMPACT_ORDER_ENCODING;
+                PBEncoder.BASE = Integer.parseInt(opt.substring(5));
+            }
         } else if (opt.matches("(no_)?gcnf")) {
             Problem.GCNF = ! opt.startsWith("no_");
         } else if (opt.matches("(no_)?gwcnf")) {
@@ -483,10 +640,10 @@ public class SugarMain {
             int n = "simp_cache=".length();
             int size = Integer.parseInt(opt.substring(n));
             if (size <= 0) {
-                CSP.USE_SIMPLIFYCACHE = false;
+                Simplifier.USE_SIMPLIFYCACHE = false;
             } else {
-                CSP.USE_SIMPLIFYCACHE = true;
-                CSP.MAX_SIMPLIFYCACHE_SIZE = size;
+                Simplifier.USE_SIMPLIFYCACHE = true;
+                Simplifier.MAX_SIMPLIFYCACHE_SIZE = size;
             }
         } else {
             return false;
@@ -510,8 +667,10 @@ public class SugarMain {
         IntegerDomain.USE_DIET_DOMAIN = false;
         Problem.GCNF = false;
         Problem.GWCNF = false;
-        CSP.USE_SIMPLIFYCACHE = true;
-        CSP.MAX_SIMPLIFYCACHE_SIZE = 1000;
+        Simplifier.USE_SIMPLIFYCACHE = true;
+        Simplifier.MAX_SIMPLIFYCACHE_SIZE = 1000;
+        PBEncoder.BASE = 0;
+        PBEncoder.ENCODING_OPTION = 1;
     }
     
     public static void init() {
@@ -539,6 +698,10 @@ public class SugarMain {
                     competition = true;
                 } else if (args[i].equals("-incremental")) {
                     incremental = true;
+                } else if (args[i].equals("-pb")) {
+                    pb = true;
+                    if (pbEncoding == null)
+                        pbEncoding = PBEncoder.Encoding.ORDER_ENCODING;
                 } else if (args[i].equals("-option") && i + 1 < args.length) {
                     String[] opts = args[i+1].split(",");
                     for (String opt : opts) {
@@ -581,11 +744,17 @@ public class SugarMain {
                 String cspFileName = args[i+1];
                 String satFileName = args[i+2];
                 String mapFileName = args[i+3];
-                sugarMain.encode(cspFileName, satFileName, mapFileName);
+                if (pb || pbEncoding != null)
+                    sugarMain.encodePB(cspFileName, satFileName, mapFileName);
+                else
+                    sugarMain.encode(cspFileName, satFileName, mapFileName);
             } else if (option.equals("-decode") && n == 3) {
                 String outFileName = args[i+1];
                 String mapFileName = args[i+2];
-                sugarMain.decode(outFileName, mapFileName);
+                if (pb || pbEncoding != null)
+                    sugarMain.decodePB(outFileName, mapFileName);
+                else
+                    sugarMain.decode(outFileName, mapFileName);
             } else {
                 String s = "";
                 for (String a : args) {

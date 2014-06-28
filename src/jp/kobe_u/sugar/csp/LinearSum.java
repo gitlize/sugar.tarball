@@ -128,6 +128,14 @@ public class LinearSum {
         return isDomainLargerThanExcept(limit, v);
     }
     
+    public boolean isModified() {
+        for (IntegerVariable v : coef.keySet()) {
+            if (v.isModified())
+                return true;
+        }
+        return false;
+    }
+    
     /**
      * Adds the given linear expression.
      * @param linearLe the linear expression to be added.
@@ -211,7 +219,7 @@ public class LinearSum {
     }
     
     public IntegerDomain getDomain() throws SugarException {
-        if (domain == null) {
+        if (domain == null || isModified()) {
             domain = IntegerDomain.create(b, b);
             for (IntegerVariable v : coef.keySet()) {
                 int a = getA(v);

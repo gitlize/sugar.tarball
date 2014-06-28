@@ -1,7 +1,10 @@
 package jp.kobe_u.sugar.csp;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Iterator;
+import java.util.List;
 
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.encoder.Problem;
@@ -87,7 +90,6 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
     public void setComment(String comment) {
         this.comment = comment;
     }
-
     
     /**
      * @return the modified
@@ -172,6 +174,23 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
         return domain.size() - 1;
     }
 
+    public List<Clause> getDomainClauses() {
+        List<Clause> clauses = new ArrayList<Clause>();
+        int last = 0;
+        Iterator<int[]> intervals = domain.intervals();
+        while (intervals.hasNext()) {
+            int[] interval = intervals.next();
+            if (domain.getLowerBound() < interval[0]) {
+                Clause clause = new Clause();
+                clause.add(new LinearLeLiteral(new LinearSum(1, this, -last)));
+                clause.add(new LinearGeLiteral(new LinearSum(1, this, -interval[0])));
+                clauses.add(clause);
+            }
+            last = interval[1];
+        }
+        return clauses;
+    }
+    
     public void decode(BitSet satValues) {
         int lb = domain.getLowerBound();
         int ub = domain.getUpperBound();

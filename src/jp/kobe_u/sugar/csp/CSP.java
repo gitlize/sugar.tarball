@@ -4,15 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import jp.kobe_u.sugar.Logger;
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.converter.Converter;
-import jp.kobe_u.sugar.expression.Expression;
 
 /**
  * A class for CSP (Constraint Satisfaction Problems).
@@ -21,24 +16,6 @@ import jp.kobe_u.sugar.expression.Expression;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public class CSP {
-    public static boolean USE_SIMPLIFYCACHE = true;
-    public static int MAX_SIMPLIFYCACHE_SIZE = 1000;
-    public static boolean simplifyAll = true;
-
-    private class SimplifyMap extends LinkedHashMap<Literal,BooleanLiteral> {
-        SimplifyMap() {
-            super(100, 0.75f, true);
-        }
-
-        /* (non-Javadoc)
-         * @see java.util.LinkedHashMap#removeEldestEntry(java.util.Map.Entry)
-         */
-        @Override
-        protected boolean removeEldestEntry(Entry<Literal,BooleanLiteral> eldest) {
-            return size() > CSP.MAX_SIMPLIFYCACHE_SIZE;
-        }
-    }
-    
     private List<IntegerVariable> integerVariables;
 
     private List<BooleanVariable> booleanVariables;
@@ -68,8 +45,6 @@ public class CSP {
     private int booleanVariablesSizeSave = 0;
 
     private int clausesSizeSave = 0;
-
-    private Map<Literal,BooleanLiteral> simplifyCache;
 
     /**
      * Objective types.
@@ -102,7 +77,6 @@ public class CSP {
         integerVariableMap = new HashMap<String,IntegerVariable>();
         booleanVariableMap = new HashMap<String,BooleanVariable>();
         relationMap = new HashMap<String,Relation>();
-        simplifyCache = new SimplifyMap();
     }
     
     public void commit() {
@@ -260,6 +234,10 @@ public class CSP {
         return clauses.subList(clausesSizeSave, clauses.size());
     }
     
+    public void setClauses(List<Clause> newClauses) {
+        clauses = newClauses;
+    }
+    
     /**
      * Adds a relation.
      * @param relation the relation to be added
@@ -333,52 +311,6 @@ public class CSP {
         return removedValues + removedLiterals + removedClauses;
     }
     
-    private List<Clause> simplify(Clause clause) throws SugarException {
-        List<Literal> literals = clause.getLiterals();
-        List<Clause> newClauses = new ArrayList<Clause>();
-        clause = new Clause();
-        int complex = 0;
-        for (Literal literal : literals) {
-            if (literal.isSimple()) {
-                clause.add(literal);
-            } else {
-                complex++;
-                if (! CSP.simplifyAll && complex == 1) {
-                    clause.add(literal);
-                } else if (USE_SIMPLIFYCACHE && simplifyCache.containsKey(literal)) {
-                    Literal lit = simplifyCache.get(literal); 
-                    clause.add(lit);
-                } else {
-                    BooleanVariable p = new BooleanVariable();
-                    add(p);
-                    BooleanLiteral posLiteral = new BooleanLiteral(p, false);
-                    BooleanLiteral negLiteral = new BooleanLiteral(p, true);
-                    Clause newClause = new Clause();
-                    newClause.add(negLiteral);
-                    newClause.add(literal);
-                    newClauses.add(newClause);
-                    clause.add(posLiteral);
-                    if (USE_SIMPLIFYCACHE)
-                        simplifyCache.put(literal, posLiteral);
-                }
-            }
-        }
-        newClauses.add(clause);
-        return newClauses;
-    }
-    
-    public void simplify() throws SugarException {
-        List<Clause> newClauses = new ArrayList<Clause>();
-        for (Clause clause : clauses) {
-            if (clause.isSimple()) {
-                newClauses.add(clause);
-            } else {
-                newClauses.addAll(simplify(clause));
-            }
-        }
-        clauses = newClauses;
-    }
-
     public void compact() throws SugarException {
         throw new SugarException("Unimplemented method compact()");
         /*

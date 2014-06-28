@@ -1,30 +1,20 @@
 package jp.kobe_u.sugar.encoder;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.RandomAccessFile;
 import java.io.StreamTokenizer;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.BitSet;
-import java.util.List;
 
-import jp.kobe_u.sugar.Logger;
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
 import jp.kobe_u.sugar.SugarMain;
 import jp.kobe_u.sugar.csp.BooleanVariable;
 import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.CSP.Objective;
-import jp.kobe_u.sugar.csp.Clause;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 
 /**
@@ -75,11 +65,10 @@ public class Encoder extends OrderEncoder {
         encode(satFileName);
     }
 
-    public void outputMap(String mapFileName) throws SugarException, IOException {
+    @Override
+    public void outputMap(String mapFileName) throws IOException {
         BufferedWriter mapWriter = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(mapFileName), "UTF-8"));
-//      BufferedOutputStream mapFile =
-//          new BufferedOutputStream(new FileOutputStream(mapFileName));
         if (csp.getObjectiveVariables() != null) {
             String s = "objective ";
             if (csp.getObjective().equals(Objective.MINIMIZE)) {
@@ -90,8 +79,6 @@ public class Encoder extends OrderEncoder {
             for (IntegerVariable v : csp.getObjectiveVariables()) {
                 s += " " + v.getName();
             }
-//          mapFile.write(s.getBytes());
-//          mapFile.write('\n');
             mapWriter.write(s);
             mapWriter.write('\n');
         }
@@ -101,8 +88,6 @@ public class Encoder extends OrderEncoder {
                 StringBuilder sb = new StringBuilder();
                 sb.append("int " + v.getName() + " " + code + " ");
                 v.getDomain().appendValues(sb, true);
-//              mapFile.write(sb.toString().getBytes());
-//              mapFile.write('\n');
                 mapWriter.write(sb.toString());
                 mapWriter.write('\n');
             }
@@ -111,13 +96,10 @@ public class Encoder extends OrderEncoder {
             if (! v.isAux() || SugarMain.debug > 0) {
                 int code = v.getCode();
                 String s = "bool " + v.getName() + " " + code;
-//              mapFile.write(s.getBytes());
-//              mapFile.write('\n');
                 mapWriter.write(s);
                 mapWriter.write('\n');
             }
         }
-//      mapFile.close();
         mapWriter.close();
     }
 
@@ -152,6 +134,7 @@ public class Encoder extends OrderEncoder {
     }
     */
 
+    @Override
     public boolean decode(String outFileName) throws SugarException, IOException {
         BufferedReader rd = new BufferedReader(new FileReader(outFileName));
         StreamTokenizer st = new StreamTokenizer(rd);

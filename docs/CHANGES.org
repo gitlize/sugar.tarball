@@ -12,6 +12,11 @@
 * Overview
   This document describes the major changes of
   [[http://bach.istc.kobe-u.ac.jp/sugar/][Sugar]] (A SAT-based Constraint Solver).
+* Version 2.2.0 [2014-06-28 Sat]
+  - CSP to PB encoding is implemented.
+    : sugar -pb -o pb_b -solver pbsolver input.csp
+  - Now, "solver" option allows to specify argument file positions.
+    : sugar -solver "glucose30 %s %o" input.csp
 * Version 2.1.3 [2013-12-01 Sun]
   - Converter is modified to support SugarLoader and XCSPLoader of Copris.
   - Inequalities are used to introduce aux variables in inequalties.

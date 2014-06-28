@@ -1,5 +1,5 @@
-VER = v2-1-3
-VERSION = 2.1.3
+VER = v2-2-0
+VERSION = 2.2.0
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -8,6 +8,9 @@ LIBDIR = /usr/local/lib/$(APP0)
 APP = $(APP0)-$(VER)
 JAR = $(APP).jar
 ZIP = $(APP).zip
+
+JAVA_VERSION = 1.6
+JAVA_RT = /usr/lib/jvm/java-6-openjdk-amd64/jre/lib/rt.jar
 
 WEBPAGE = http://bach.istc.kobe-u.ac.jp/sugar/
 WEBTITLE = Sugar: A SAT-based Constraint Solver
@@ -25,7 +28,8 @@ JAVADOC  = javadoc -locale en_US \
 all: javac jar javadoc zip
 
 javac:
-	javac -target 1.6 -sourcepath ../src -d ../classes \
+	javac -target $(JAVA_VERSION) -source $(JAVA_VERSION) -bootclasspath $(JAVA_RT) \
+		-sourcepath ../src -d ../classes \
 		../src/jp/kobe_u/sugar/*.java \
 		../src/jp/kobe_u/sugar/*/*.java
 
@@ -53,6 +57,7 @@ install:
 	mkdir -p $(BINDIR)
 	cp -p $(APP0) $(APP)
 	install $(APP) $(BINDIR)
+	rm $(APP)
 	cd $(BINDIR); rm -f $(APP0); ln -s $(APP) $(APP0)
 
 clean:

@@ -15,8 +15,8 @@ import jp.kobe_u.sugar.SugarException;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public abstract class LinearLiteral extends Literal {
-    protected LinearSum linearSum;
-    protected String cmp;
+    public LinearSum linearSum;
+    public String cmp;
 
     /**
      * Constructs a new comparison literal of given linear expression.
@@ -35,7 +35,7 @@ public abstract class LinearLiteral extends Literal {
         return linearSum.getVariables();
     }
 
-    protected int floorDiv(int b, int a) {
+    public int floorDiv(int b, int a) {
         if (a < 0) {
             a = - a;
             b = - b;
@@ -46,7 +46,7 @@ public abstract class LinearLiteral extends Literal {
             return (b - a + 1) / a;
     }
     
-    protected int ceilDiv(int b, int a) {
+    public int ceilDiv(int b, int a) {
         if (a < 0) {
             a = - a;
             b = - b;
@@ -65,6 +65,10 @@ public abstract class LinearLiteral extends Literal {
         return linearSum;
     }
 
+    public String getCmp() {
+        return cmp;
+    }
+    
     @Override
     public int hashCode() {
         final int prime = 31;

@@ -1,5 +1,6 @@
 package jp.kobe_u.sugar.encoder;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -53,10 +54,19 @@ public class FileProblem extends Problem {
         int len = b.length;
         if (satByteBuffer.position() + len > SAT_BUFFER_SIZE)
             flush();
-        satByteBuffer.put(b);
-        fileSize += len;
-        if (fileSize >= MAX_SAT_SIZE)
+        int pos = 0;
+        while (len > SAT_BUFFER_SIZE) {
+            satByteBuffer.put(b, pos, SAT_BUFFER_SIZE);
+            flush();
+            pos += SAT_BUFFER_SIZE;
+            len -= SAT_BUFFER_SIZE;
+        }
+        satByteBuffer.put(b, pos, len);
+        fileSize += b.length;
+        if (fileSize >= MAX_SAT_SIZE) {
+            (new File(satFileName)).delete();
             throw new SugarException("Encoding is interrupted because file size becomes too large (" + fileSize + " bytes)");
+        }
     }
     
     public void write(String s) throws SugarException {
@@ -201,4 +211,5 @@ public class FileProblem extends Problem {
             write(Integer.toString(code) + " ");
         write("0\n");
     }
+
 }
