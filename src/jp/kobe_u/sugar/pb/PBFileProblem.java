@@ -141,8 +141,11 @@ public class PBFileProblem extends PBProblem {
         if (constraintsCount == 0) {
             if (variablesCount == 0)
                 variablesCount++;
-            // TODO
-            constraintsCount++;
+            PBExpr expr = new PBExpr();
+            expr.add(1, 1);
+            expr.setCmp(">=");
+            expr.setB(0);
+            addPBConstraint(expr);
         }
         flush();
         close();
@@ -155,6 +158,16 @@ public class PBFileProblem extends PBProblem {
     }
     
     public void addPBConstraint(PBExpr expr) throws SugarException {
+        if (expr.isValid())
+            return;
+        if (expr.isUnsatisfiable()) {
+            if (variablesCount == 0)
+                variablesCount++;
+            expr = new PBExpr();
+            expr.add(-1, 1);
+            expr.setCmp(">=");
+            expr.setB(1);
+        }
         write(expr.toString());
         write(" ;\n");
         constraintsCount++;

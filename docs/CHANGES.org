@@ -12,6 +12,8 @@
 * Overview
   This document describes the major changes of
   [[http://bach.istc.kobe-u.ac.jp/sugar/][Sugar]] (A SAT-based Constraint Solver).
+* Version 2.2.1 [2014-07-06 Sun]
+  - Modified for Copris 2.2.5
 * Version 2.2.0 [2014-06-28 Sat]
   - CSP to PB encoding is implemented.
     : sugar -pb -o pb_b -solver pbsolver input.csp

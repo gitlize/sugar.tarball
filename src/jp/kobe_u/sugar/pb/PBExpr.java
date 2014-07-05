@@ -117,6 +117,15 @@ public class PBExpr {
         return false;
     }
     
+    public boolean isUnsatisfiable() {
+        if (cmp != null && cmp.equals("<=")) {
+            return getLB() > 0;
+        } else if (cmp != null && cmp.equals(">=")) {
+            return getUB() < 0;
+        }
+        return false;
+    }
+    
     public int value(BitSet pbValues) {
         int value = b;
         for (int code : coef.keySet()) {

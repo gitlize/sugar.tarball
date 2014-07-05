@@ -67,6 +67,38 @@ public class PBEncoder {
         intMap = new VarExprMap();
     }
 
+    public void commit() throws SugarException {
+        problem.commit();
+    }
+    
+    public void cancel() throws SugarException {
+        problem.cancel();
+    }
+    
+    public void encodeDelta() throws IOException, SugarException {
+        int satVariablesCount = problem.variablesCount;
+        for (IntegerVariable v : csp.getIntegerVariablesDelta()) {
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        for (BooleanVariable v : csp.getBooleanVariablesDelta()) {
+            v.setCode(satVariablesCount + 1);
+            int size = v.getSatVariablesSize();
+            satVariablesCount += size;
+        }
+        problem.addVariables(satVariablesCount - problem.variablesCount);
+        for (IntegerVariable v : csp.getIntegerVariablesDelta()) { 
+            encode(v);
+        }
+        for (Clause c : csp.getClausesDelta()) {
+            if (c.isValid())
+                continue;
+            encode(c);
+        }
+        problem.done();
+    }
+
     private int getIntegerVariableSize(IntegerVariable v) throws SugarException {
         IntegerDomain domain = v.getDomain();
         int size = 0;
