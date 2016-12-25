@@ -15,6 +15,10 @@ public class PBExpr {
     public PBExpr() {
     }
 
+    public int size() {
+        return coef.size();
+    }
+
     public Set<Integer> getXs() {
         return coef.keySet();
     }

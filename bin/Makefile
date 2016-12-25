@@ -1,5 +1,5 @@
-VER = v2-2-1
-VERSION = 2.2.1
+VER = v2-3-2
+VERSION = 2.3.2
 
 APP0 = sugar
 BINDIR = /usr/local/bin
@@ -9,8 +9,8 @@ APP = $(APP0)-$(VER)
 JAR = $(APP).jar
 ZIP = $(APP).zip
 
-JAVA_VERSION = 1.6
-JAVA_RT = /usr/lib/jvm/java-6-openjdk-amd64/jre/lib/rt.jar
+JAVA_VERSION = 1.8
+JAVA_RT = /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/rt.jar
 
 WEBPAGE = http://bach.istc.kobe-u.ac.jp/sugar/
 WEBTITLE = Sugar: A SAT-based Constraint Solver
@@ -21,13 +21,19 @@ JAVADOC  = javadoc -locale en_US \
 	-windowtitle '$(DOCTITLE)' -doctitle '$(DOCTITLE)' \
 	-header '<em><b>$(DOCTITLE)</b></em><br>' \
 	-bottom '<address><a href="$(WEBPAGE)">$(WEBTITLE)</a></address>' \
-	-link http://java.sun.com/javase/6/docs/api \
+	-link http://java.sun.com/javase/8/docs/api \
 	-classpath ../classes -sourcepath ../src -subpackages $(PACKAGE) \
 	-public -d ../docs/api
 
 all: javac jar javadoc zip
 
 javac:
+	javac -target $(JAVA_VERSION) -source $(JAVA_VERSION) \
+		-sourcepath ../src -d ../classes \
+		../src/jp/kobe_u/sugar/*.java \
+		../src/jp/kobe_u/sugar/*/*.java
+
+XXXjavac:
 	javac -target $(JAVA_VERSION) -source $(JAVA_VERSION) -bootclasspath $(JAVA_RT) \
 		-sourcepath ../src -d ../classes \
 		../src/jp/kobe_u/sugar/*.java \

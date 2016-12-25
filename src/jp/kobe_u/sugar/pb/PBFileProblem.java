@@ -165,8 +165,8 @@ public class PBFileProblem extends PBProblem {
                 variablesCount++;
             expr = new PBExpr();
             expr.add(-1, 1);
+            expr.add(-1);
             expr.setCmp(">=");
-            expr.setB(1);
         }
         write(expr.toString());
         write(" ;\n");
@@ -176,6 +176,12 @@ public class PBFileProblem extends PBProblem {
     public void addMinExpr(PBExpr minExpr) throws SugarException {
         write("min: ");
         write(minExpr.toString());
+        write(" ;\n");
+    }
+
+    public void addPMin(String pmin) throws SugarException {
+        write("* pmin:");
+        write(pmin);
         write(" ;\n");
     }
 }

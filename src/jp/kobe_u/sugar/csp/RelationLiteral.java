@@ -21,6 +21,7 @@ public class RelationLiteral extends Literal {
     public boolean negative;
     public boolean conflicts;
     public IntegerVariable[] vs;
+    public int[][] tuples;
     private HashSet<Tuple> tupleSet;
     private static final int UNDEF = Integer.MIN_VALUE;
     
@@ -87,6 +88,7 @@ public class RelationLiteral extends Literal {
         this.negative = negative;
         this.conflicts = conflicts;
         this.vs = vs;
+        this.tuples = tuples;
         tupleSet = new HashSet<Tuple>();
         for (int[] tuple : tuples) {
             tupleSet.add(new Tuple(tuple.clone()));
@@ -283,6 +285,11 @@ public class RelationLiteral extends Literal {
     }
 
     @Override
+    public Literal neg() throws SugarException {
+        return new RelationLiteral(name, arity, ! negative, conflicts, tuples, vs);
+    }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -363,5 +370,4 @@ public class RelationLiteral extends Literal {
         return sb.toString();
         */
     }
-
 }

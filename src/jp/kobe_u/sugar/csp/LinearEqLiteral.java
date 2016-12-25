@@ -6,6 +6,7 @@ import java.util.Set;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.encoder.Encoding;
 
 /**
  * This class implements a comparison literal of CSP.
@@ -20,8 +21,7 @@ public class LinearEqLiteral extends LinearLiteral {
      * @param linearSum the linear expression
      */
     public LinearEqLiteral(LinearSum linearSum) {
-        super(linearSum);
-        cmp = "eq";
+        super(linearSum, "eq");
     }
     
     @Override
@@ -48,7 +48,17 @@ public class LinearEqLiteral extends LinearLiteral {
 
     @Override
     public boolean isSimple() {
-        return false;
+        if (! linearSum.isSimple())
+            return false;
+        if (linearSum.size() == 0)
+            return true;
+        Encoding encoding = linearSum.getCoef().firstKey().getEncoding();
+        switch (encoding) {
+        case XXX_DIRECT:
+            return true;
+        default:
+            return false;
+        }
     }
     
     @Override
@@ -85,6 +95,11 @@ public class LinearEqLiteral extends LinearLiteral {
             }
         }
         return removed;
+    }
+
+    @Override
+    public Literal neg() throws SugarException {
+        return new LinearNeLiteral(linearSum);
     }
 
     @Override

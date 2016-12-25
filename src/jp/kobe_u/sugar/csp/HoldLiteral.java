@@ -59,6 +59,11 @@ public class HoldLiteral extends Literal {
         // TODO isSatisfied
         return false;
     }
+    
+    @Override
+    public Literal neg() throws SugarException {
+        return new HoldLiteral(expr, ! negative);
+    }
 
     @Override
     public int hashCode() {

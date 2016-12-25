@@ -1,14 +1,11 @@
 package jp.kobe_u.sugar.pb;
 
-import java.util.List;
-
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.SugarMain;
 
 public abstract class PBProblem {
-    protected int variablesCount = 0;
-    protected int constraintsCount = 0;
-    protected long fileSize = 0;
+    public int variablesCount = 0;
+    public int constraintsCount = 0;
+    public long fileSize = 0;
     private int variablesCountSave = 0;
     private int constraintsCountSave = 0;
     private long fileSizeSave = 0;
@@ -52,6 +49,8 @@ public abstract class PBProblem {
     }
 
     public abstract void addMinExpr(PBExpr minExpr) throws SugarException;
+
+    public abstract void addPMin(String pmin) throws SugarException;
 
     public String summary() {
         return

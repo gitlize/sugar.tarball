@@ -13,14 +13,14 @@ import jp.kobe_u.sugar.SugarException;
  * @see CSP
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
-public class IntegerDomainOld extends IntegerDomain {
+public class IntegerDomainIntevals extends IntegerDomain {
     public static int MAX_SET_SIZE = 128;
     // public static int MAX_SET_SIZE = 256;
     private int lb;
     private int ub;
     private SortedSet<Integer> domain;
 
-    private static IntegerDomainOld _create(SortedSet<Integer> domain) throws SugarException {
+    private static IntegerDomainIntevals _create(SortedSet<Integer> domain) throws SugarException {
         int lb = domain.first();
         int ub = domain.last();
         if (domain.size() <= MAX_SET_SIZE) {
@@ -38,12 +38,12 @@ public class IntegerDomainOld extends IntegerDomain {
             domain = null;
         }
         if (domain == null) {
-            return new IntegerDomainOld(lb, ub); 
+            return new IntegerDomainIntevals(lb, ub); 
         }
-        return new IntegerDomainOld(domain);
+        return new IntegerDomainIntevals(domain);
     }
     
-    public IntegerDomainOld(int lb, int ub) throws SugarException {
+    public IntegerDomainIntevals(int lb, int ub) throws SugarException {
         if (lb > ub) {
             throw new SugarException("Illegal domain instantiation " + lb + " " + ub);
         }
@@ -52,13 +52,13 @@ public class IntegerDomainOld extends IntegerDomain {
         domain = null;
     }
 
-    public IntegerDomainOld(SortedSet<Integer> domain) {
+    public IntegerDomainIntevals(SortedSet<Integer> domain) {
         lb = domain.first();
         ub = domain.last();
         this.domain = domain;
     }
 
-    public IntegerDomainOld(IntegerDomainOld d) {
+    public IntegerDomainIntevals(IntegerDomainIntevals d) {
         lb = d.lb;
         ub = d.ub;
         domain = null;
@@ -127,10 +127,10 @@ public class IntegerDomainOld extends IntegerDomain {
         lb0 = Math.max(lb, lb0);
         ub0 = Math.min(ub, ub0);
         if (domain == null) {
-            return new IntegerDomainOld(lb0, ub0);
+            return new IntegerDomainIntevals(lb0, ub0);
         } else {
             // System.out.println("## " + lb0 + " " + ub0 + " " + domain);
-            return new IntegerDomainOld(domain.subSet(lb0, ub0 + 1));
+            return new IntegerDomainIntevals(domain.subSet(lb0, ub0 + 1));
         }
     }
 
@@ -196,7 +196,7 @@ public class IntegerDomainOld extends IntegerDomain {
         return intervals.iterator();
     }
     
-    public IntegerDomain cap(IntegerDomainOld d1) throws SugarException {
+    public IntegerDomain cap(IntegerDomainIntevals d1) throws SugarException {
         if (d1.domain == null) {
             return bound(d1.lb, d1.ub); 
         } else if (domain == null) {
@@ -208,11 +208,11 @@ public class IntegerDomainOld extends IntegerDomain {
                     d.add(value);
                 }
             }
-            return new IntegerDomainOld(d);
+            return new IntegerDomainIntevals(d);
         }
     }
 
-    public IntegerDomain cup(IntegerDomainOld d1) throws SugarException {
+    public IntegerDomain cup(IntegerDomainIntevals d1) throws SugarException {
         if (domain == null || d1.domain == null) {
             if (size() == 1 && d1.size() == 1) {
                 SortedSet<Integer> d = new TreeSet<Integer>();
@@ -222,7 +222,7 @@ public class IntegerDomainOld extends IntegerDomain {
             }
             int lb = Math.min(this.lb, d1.lb);
             int ub = Math.max(this.ub, d1.ub);
-            return new IntegerDomainOld(lb, ub);
+            return new IntegerDomainIntevals(lb, ub);
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>(domain);
             d.addAll(d1.domain);
@@ -233,7 +233,7 @@ public class IntegerDomainOld extends IntegerDomain {
 
     public IntegerDomain neg() throws SugarException {
         if (domain == null) {
-            return new IntegerDomainOld(-ub, -lb);
+            return new IntegerDomainIntevals(-ub, -lb);
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
             for (int value : domain) {
@@ -249,9 +249,9 @@ public class IntegerDomainOld extends IntegerDomain {
             int lb0 = Math.min(Math.abs(lb), Math.abs(ub));
             int ub0 = Math.max(Math.abs(lb), Math.abs(ub));
             if (lb <= 0 && 0 <= ub) {
-                return new IntegerDomainOld(0, ub0);
+                return new IntegerDomainIntevals(0, ub0);
             } else {
-                return new IntegerDomainOld(lb0, ub0);
+                return new IntegerDomainIntevals(lb0, ub0);
             }
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
@@ -265,7 +265,7 @@ public class IntegerDomainOld extends IntegerDomain {
     
     private IntegerDomain add(int a) throws SugarException {
         if (domain == null) {
-            return new IntegerDomainOld(lb+a, ub+a);
+            return new IntegerDomainIntevals(lb+a, ub+a);
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
             for (int value : domain) {
@@ -276,7 +276,7 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
 
-    public IntegerDomain add(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain add(IntegerDomainIntevals d) throws SugarException {
         if (d.size() == 1) {
             return add(d.lb);
         } else  if (size() == 1) {
@@ -285,7 +285,7 @@ public class IntegerDomainOld extends IntegerDomain {
         if (domain == null || d.domain == null) {
             int lb0 = lb + d.lb;
             int ub0 = ub + d.ub;
-            return new IntegerDomainOld(lb0, ub0);
+            return new IntegerDomainIntevals(lb0, ub0);
         } else {
             SortedSet<Integer> d0 = new TreeSet<Integer>();
             for (int value1 : domain) {
@@ -302,7 +302,7 @@ public class IntegerDomainOld extends IntegerDomain {
         return add(-a);
     }
 
-    public IntegerDomain sub(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain sub(IntegerDomainIntevals d) throws SugarException {
         return add(d.neg());
     }
 
@@ -316,9 +316,9 @@ public class IntegerDomainOld extends IntegerDomain {
                 }
                 return _create(d);
             } else if (a < 0) {
-                return new IntegerDomainOld(ub*a, lb*a);
+                return new IntegerDomainIntevals(ub*a, lb*a);
             } else {
-                return new IntegerDomainOld(lb*a, ub*a);
+                return new IntegerDomainIntevals(lb*a, ub*a);
             }
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
@@ -329,7 +329,7 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
 
-    public IntegerDomain mul(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain mul(IntegerDomainIntevals d) throws SugarException {
         if (d.size() == 1) {
             return mul(d.lb);
         } else  if (size() == 1) {
@@ -343,7 +343,7 @@ public class IntegerDomainOld extends IntegerDomain {
             int b11 = ub * d.ub;
             int lb0 = Math.min(Math.min(b00, b01), Math.min(b10, b11));
             int ub0 = Math.max(Math.max(b00, b01), Math.max(b10, b11));
-            return new IntegerDomainOld(lb0, ub0);
+            return new IntegerDomainIntevals(lb0, ub0);
         } else {
             SortedSet<Integer> d0 = new TreeSet<Integer>();
             for (int value1 : domain) {
@@ -365,9 +365,9 @@ public class IntegerDomainOld extends IntegerDomain {
     public IntegerDomain div(int a) throws SugarException {
         if (domain == null) {
             if (a < 0) {
-                return new IntegerDomainOld(div(ub,a), div(lb,a));
+                return new IntegerDomainIntevals(div(ub,a), div(lb,a));
             } else {
-                return new IntegerDomainOld(div(lb,a), div(ub,a));
+                return new IntegerDomainIntevals(div(lb,a), div(ub,a));
             }
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
@@ -378,7 +378,7 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
 
-    public IntegerDomain div(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain div(IntegerDomainIntevals d) throws SugarException {
         if (d.size() == 1) {
             return div(d.lb);
         }
@@ -398,7 +398,7 @@ public class IntegerDomainOld extends IntegerDomain {
                 lb0 = Math.min(lb0, Math.min(-lb, -ub));
                 ub0 = Math.max(ub0, Math.max(-lb, -ub));
             }
-            return new IntegerDomainOld(lb0, ub0);
+            return new IntegerDomainIntevals(lb0, ub0);
         } else {
             SortedSet<Integer> d0 = new TreeSet<Integer>();
             for (int value1 : domain) {
@@ -413,7 +413,7 @@ public class IntegerDomainOld extends IntegerDomain {
     public IntegerDomain mod(int a) throws SugarException {
         a = Math.abs(a);
         if (domain == null) {
-            return new IntegerDomainOld(0, a - 1);
+            return new IntegerDomainIntevals(0, a - 1);
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
             for (int value : domain) {
@@ -423,14 +423,14 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
 
-    public IntegerDomain mod(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain mod(IntegerDomainIntevals d) throws SugarException {
         if (d.size() == 1) {
             return mod(d.lb);
         }
         if (domain == null || d.domain == null) {
             int lb0 = 0;
             int ub0 = Math.max(Math.abs(d.lb), Math.abs(d.ub)) - 1;
-            return new IntegerDomainOld(lb0, ub0);
+            return new IntegerDomainIntevals(lb0, ub0);
         } else {
             SortedSet<Integer> d0 = new TreeSet<Integer>();
             for (int value1 : domain) {
@@ -449,9 +449,9 @@ public class IntegerDomainOld extends IntegerDomain {
             int lb0 = Math.min(a1, a2);
             int ub0 = Math.max(a1, a2);
             if (a % 2 == 0 && lb <= 0 && 0 <= ub) {
-                return new IntegerDomainOld(0, ub0);
+                return new IntegerDomainIntevals(0, ub0);
             } else {
-                return new IntegerDomainOld(lb0, ub0);
+                return new IntegerDomainIntevals(lb0, ub0);
             }
         } else {
             SortedSet<Integer> d = new TreeSet<Integer>();
@@ -462,7 +462,7 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
     
-    public IntegerDomain min(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain min(IntegerDomainIntevals d) throws SugarException {
         int lb0 = Math.min(lb, d.lb);
         int ub0 = Math.min(ub, d.ub);
         if (ub <= d.lb) {
@@ -472,7 +472,7 @@ public class IntegerDomainOld extends IntegerDomain {
         } 
         if (domain == null) {
             if (d.domain == null) {
-                return new IntegerDomainOld(lb0, ub0);
+                return new IntegerDomainIntevals(lb0, ub0);
             } else {
                 return d.min(this);
             }
@@ -489,7 +489,7 @@ public class IntegerDomainOld extends IntegerDomain {
         }
     }
 
-    public IntegerDomain max(IntegerDomainOld d) throws SugarException {
+    public IntegerDomain max(IntegerDomainIntevals d) throws SugarException {
         int lb0 = Math.max(lb, d.lb);
         int ub0 = Math.max(ub, d.ub);
         if (lb >= d.ub) {
@@ -499,7 +499,7 @@ public class IntegerDomainOld extends IntegerDomain {
         } 
         if (domain == null) {
             if (d.domain == null) {
-                return new IntegerDomainOld(lb0, ub0);
+                return new IntegerDomainIntevals(lb0, ub0);
             } else {
                 return d.max(this);
             }
@@ -517,61 +517,61 @@ public class IntegerDomainOld extends IntegerDomain {
     }
 
     private void checkDomain(IntegerDomain domain) throws SugarException {
-        if (! (domain instanceof IntegerDomainOld))
+        if (! (domain instanceof IntegerDomainIntevals))
             throw new SugarException("Incompatible domain " + this + ", " + domain);
     }
     
     @Override
     public IntegerDomain cup(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return cup((IntegerDomainOld)domain);
+        return cup((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain cap(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return cap((IntegerDomainOld)domain);
+        return cap((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain add(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return add((IntegerDomainOld)domain);
+        return add((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain sub(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return sub((IntegerDomainOld)domain);
+        return sub((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain mul(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return mul((IntegerDomainOld)domain);
+        return mul((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain div(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return div((IntegerDomainOld)domain);
+        return div((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain mod(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return mod((IntegerDomainOld)domain);
+        return mod((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain min(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return min((IntegerDomainOld)domain);
+        return min((IntegerDomainIntevals)domain);
     }
 
     @Override
     public IntegerDomain max(IntegerDomain domain) throws SugarException {
         checkDomain(domain);
-        return max((IntegerDomainOld)domain);
+        return max((IntegerDomainIntevals)domain);
     }
 }

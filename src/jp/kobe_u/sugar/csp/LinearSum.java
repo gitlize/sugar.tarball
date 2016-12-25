@@ -1,6 +1,5 @@
 package jp.kobe_u.sugar.csp;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -23,8 +22,10 @@ import jp.kobe_u.sugar.expression.Expression;
  * @author Naoyuki Tamura
  */
 public class LinearSum {
+    public static LinearSum ONE = new LinearSum(1);
+    
     private int b;
-    private SortedMap<IntegerVariable,Integer> coef;
+    private SortedMap<IntegerVariable,Integer> coef = new TreeMap<IntegerVariable,Integer>();
     private IntegerDomain domain = null;
 
     public LinearSum(int b) {
@@ -218,6 +219,19 @@ public class LinearSum {
         }
     }
     
+    public int coefGCD() {
+        if (size() == 0) {
+            return 1;
+        }
+        int gcd = Math.abs(getA(coef.firstKey()));
+        for (IntegerVariable v : coef.keySet()) {
+            gcd = gcd(gcd, Math.abs(getA(v)));
+            if (gcd == 1)
+                break;
+        }
+        return gcd;
+    }
+
     public IntegerDomain getDomain() throws SugarException {
         if (domain == null || isModified()) {
             domain = IntegerDomain.create(b, b);
@@ -294,6 +308,28 @@ public class LinearSum {
         }
     }
 
+    public boolean containsPbPart() {
+        for (IntegerVariable v : coef.keySet()) {
+            if (v.isPbEncoding())
+                return true;
+        }
+        return false;
+    }
+    
+    public LinearSum[] splitPbPart() {
+        if (! containsPbPart())
+            return new LinearSum[] { this };
+        LinearSum e1 = new LinearSum(0); 
+        LinearSum e2 = new LinearSum(b); 
+        for (IntegerVariable v : coef.keySet()) {
+            if (v.isPbEncoding())
+                e2.setA(coef.get(v), v);
+            else
+                e1.setA(coef.get(v), v);
+        }
+        return new LinearSum[] { e1, e2 };
+    }
+    
     public IntegerVariable getLargestDomainVariable() {
         IntegerVariable var = null;
         for (IntegerVariable v : coef.keySet()) {
@@ -524,5 +560,4 @@ public class LinearSum {
         }
         return sb.toString();
     }
-
 }

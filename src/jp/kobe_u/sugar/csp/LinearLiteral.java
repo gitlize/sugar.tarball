@@ -15,19 +15,46 @@ import jp.kobe_u.sugar.SugarException;
  * @author Naoyuki Tamura (tamura@kobe-u.ac.jp)
  */
 public abstract class LinearLiteral extends Literal {
-    public LinearSum linearSum;
-    public String cmp;
+    protected LinearSum linearSum;
+    protected String cmp;
 
     /**
      * Constructs a new comparison literal of given linear expression.
      * @param linearSum the linear expression
      */
-    public LinearLiteral(LinearSum linearSum) {
+    public LinearLiteral(LinearSum linearSum, String cmp) {
+        /*
         int factor = linearSum.factor();
         if (factor > 1) {
             linearSum.divide(factor);
         }
+        */
+        int factor = linearSum.coefGCD();
+        if (factor > 1) {
+            int b = linearSum.getB();
+            linearSum.divide(factor);
+            if (cmp.equals("eq")) {
+                if (b % factor == 0) {
+                } else {
+                    // false literal
+                    linearSum = LinearSum.ONE;
+                    cmp = "le";
+                }
+            } else if (cmp.equals("ne")) {
+                if (b % factor == 0) {
+                } else {
+                    // true literal
+                    linearSum = LinearSum.ONE;
+                    cmp = "ge";
+                }
+            } else if (cmp.equals("le")) {
+                linearSum.setB(-(int)Math.floor(-(double)b / factor));
+            } else if (cmp.equals("ge")) {
+                linearSum.setB(-(int)Math.ceil(-(double)b / factor));
+            }
+        }
         this.linearSum = linearSum;
+        this.cmp = cmp;
     }
     
     @Override

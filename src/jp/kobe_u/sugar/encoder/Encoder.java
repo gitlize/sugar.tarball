@@ -174,6 +174,7 @@ public class Encoder extends OrderEncoder {
                 }
                 break;
             case StreamTokenizer.TT_NUMBER:
+                result = "SAT";
                 int value = (int)st.nval;
                 int i = Math.abs(value);
                 if (i > 0) {

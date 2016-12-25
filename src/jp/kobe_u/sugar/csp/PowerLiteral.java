@@ -47,6 +47,11 @@ public class PowerLiteral extends Literal {
     }
 
     @Override
+    public Literal neg() throws SugarException {
+        throw new SugarException("Negation of PowerLiteral " + this);
+    }
+
+    @Override
     public String toString() {
         // TODO toString
         String s = "(power)";

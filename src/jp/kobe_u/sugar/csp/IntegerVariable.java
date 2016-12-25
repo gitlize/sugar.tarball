@@ -1,13 +1,12 @@
 package jp.kobe_u.sugar.csp;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 
 import jp.kobe_u.sugar.SugarException;
-import jp.kobe_u.sugar.encoder.Problem;
+import jp.kobe_u.sugar.encoder.Encoding;
 
 /**
  * This class implements an integer variable of CSP.
@@ -25,8 +24,9 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
     private int code;
     private boolean dominant;
     private int value;
-    private int offset;
-    private IntegerVariable[] vs = null;
+    // private int offset;
+    // private IntegerVariable[] vs = null;
+    private Encoding encoding = Encoding.ORDER;
     
     public IntegerVariable(String name, IntegerDomain domain) throws SugarException {
         this.name = name;
@@ -140,6 +140,24 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
         this.dominant = dominant;
     }
 
+    public Encoding getEncoding() {
+        return encoding;
+    }
+
+    public void setEncoding(Encoding encoding) {
+        this.encoding = encoding;
+    }
+
+    public boolean isPbEncoding() {
+        return encoding == Encoding.LOG;
+    }
+    
+    public boolean isBoolean() {
+        int lb = domain.getLowerBound();
+        int ub = domain.getUpperBound();
+        return 0 <= lb && lb <= 1 && 0 <= ub && ub <= 1;
+    }
+
     /**
      * Returns the value of the integer variable.
      * @return the value
@@ -169,8 +187,10 @@ public class IntegerVariable implements Comparable<IntegerVariable> {
     }
 
     public int getSatVariablesSize() {
+        /*
         if (vs != null)
             return 0;
+        */
         return domain.size() - 1;
     }
 

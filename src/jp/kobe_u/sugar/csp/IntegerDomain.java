@@ -1,10 +1,7 @@
 package jp.kobe_u.sugar.csp;
  
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 import jp.kobe_u.sugar.SugarException;
 
@@ -20,14 +17,14 @@ public abstract class IntegerDomain {
         if (USE_DIET_DOMAIN)
             return new IntegerDomainDiet(lb, ub);
         else
-            return new IntegerDomainOld(lb, ub);
+            return new IntegerDomainIntevals(lb, ub);
     }
 
     public static IntegerDomain create(SortedSet<Integer> domain) {
         if (USE_DIET_DOMAIN)
             return new IntegerDomainDiet(domain);
         else
-            return new IntegerDomainOld(domain);
+            return new IntegerDomainIntevals(domain);
     }
 
     public boolean isEmpty() {

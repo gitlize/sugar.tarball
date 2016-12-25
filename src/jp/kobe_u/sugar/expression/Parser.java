@@ -210,7 +210,7 @@ public class Parser {
                 expressions = stack.pop();
                 expressions.add(x);
                 if (stack.isEmpty()) {
-                    System.out.println("## " + x);
+                    // System.out.println("## " + x);
                     int n = expressions.size();
                     if (n % 10000 == 0) {
                         Logger.fine("parsed " + n + " expressions");

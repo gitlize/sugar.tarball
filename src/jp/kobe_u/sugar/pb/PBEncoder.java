@@ -34,11 +34,13 @@ public class PBEncoder {
     public static int MAX_VAREXPRMAP_SIZE = 10000;
     public static int BASE = 0;
     public static int ENCODING_OPTION = 1;
+    public static int MIXED_BASE = 15;
     
     public static enum Encoding {
         DIRECT_ENCODING,
         ORDER_ENCODING,
-        COMPACT_ORDER_ENCODING
+        COMPACT_ORDER_ENCODING,
+        MIXED_ENCODING
     }
     
     public CSP csp;
@@ -99,10 +101,24 @@ public class PBEncoder {
         problem.done();
     }
 
+    private Encoding getEncoding(IntegerVariable v) {
+        Encoding myEncoding = encoding;
+        if (myEncoding.equals(Encoding.MIXED_ENCODING)) { 
+            if (v.getDomain().size() <= MIXED_BASE) {
+                myEncoding = Encoding.ORDER_ENCODING;
+            } else {
+                myEncoding = Encoding.COMPACT_ORDER_ENCODING;
+                BASE = 2;
+            }
+        }
+        return myEncoding;
+    }
+    
     private int getIntegerVariableSize(IntegerVariable v) throws SugarException {
+        Encoding myEncoding = getEncoding(v);
         IntegerDomain domain = v.getDomain();
         int size = 0;
-        switch (encoding) {
+        switch (myEncoding) {
         case DIRECT_ENCODING: {
             size = domain.size() - 1;
             break;
@@ -122,6 +138,8 @@ public class PBEncoder {
             }
             break;
         }
+        default:
+            break;
         }
         return size;
     }
@@ -130,10 +148,11 @@ public class PBEncoder {
         if (intMap.containsKey(v)) {
             return intMap.get(v);
         }
+        Encoding myEncoding = getEncoding(v);
         int code = v.getCode();
         IntegerDomain domain = v.getDomain();
         PBExpr expr = new PBExpr();
-        switch (encoding) {
+        switch (myEncoding) {
         case DIRECT_ENCODING: {
             int value0 = domain.getLowerBound();
             expr.add(value0);
@@ -188,6 +207,8 @@ public class PBEncoder {
             }
             break;
         }
+        default:
+            break;
         }
         intMap.put(v, expr);
         return expr;
@@ -199,9 +220,10 @@ public class PBEncoder {
     }
     
     private void encode(IntegerVariable v) throws SugarException {
+        Encoding myEncoding = getEncoding(v);
         IntegerDomain domain = v.getDomain();
         int code = v.getCode();
-        switch (encoding) {
+        switch (myEncoding) {
         case DIRECT_ENCODING: {
             int domainSize = domain.size();
             PBExpr expr = new PBExpr();
@@ -245,8 +267,10 @@ public class PBEncoder {
             }
             break;
         }
+        default:
+            break;
         }
-        switch (encoding) {
+        switch (myEncoding) {
         case COMPACT_ORDER_ENCODING:
             for (Clause clause : v.getDomainClauses()) {
                 encode(clause);
@@ -374,7 +398,7 @@ public class PBEncoder {
             return exprs;
         }
         List<PBExpr> exprs = null;
-        if (lit.linearSum.size() == 1 && ENCODING_OPTION == 1) { 
+        if (lit.getLinearExpression().size() == 1 && ENCODING_OPTION == 1) { 
             exprs = encodeSimpleLinear(lit);
         }
         if (exprs == null) {
@@ -576,7 +600,9 @@ public class PBEncoder {
                         st.nextToken();
                     }
                 } else {
-                    result = st.sval;
+                    do {
+                        st.nextToken();
+                    } while (st.ttype != StreamTokenizer.TT_EOL);
                 }
                 break;
             default:

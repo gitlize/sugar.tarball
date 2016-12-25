@@ -16,6 +16,7 @@ import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.csp.LinearEqLiteral;
 import jp.kobe_u.sugar.csp.LinearGeLiteral;
 import jp.kobe_u.sugar.csp.LinearLeLiteral;
+import jp.kobe_u.sugar.csp.LinearLiteral;
 import jp.kobe_u.sugar.csp.LinearNeLiteral;
 import jp.kobe_u.sugar.csp.LinearSum;
 import jp.kobe_u.sugar.csp.Literal;
@@ -140,7 +141,9 @@ public class ComparisonConverter {
         } else if (d2.size() == 1) {
             e1.multiply(d2.getLowerBound());
             return e1;
-        } else if (d1.size() <= d2.size()) {
+        } else if (d1.size() > d2.size()) {
+            return convertMUL((Sequence)x2.mul(x1));
+        } else if (false) {
             Expression x = null;
             Iterator<Integer> iter = d1.values();
             while (iter.hasNext()) {
@@ -153,7 +156,14 @@ public class ComparisonConverter {
             }
             return convertIF((Sequence)x);
         } else {
-            return convertMUL((Sequence)x2.mul(x1));
+            IntegerVariable prod = newIntegerVariable(d1.mul(d2), seq);
+            Expression x = Expression.create(prod.getName());
+            Iterator<Integer> iter = d1.values();
+            while (iter.hasNext()) {
+                int a1 = iter.next();
+                converter.addExtra(x1.eq(a1).imp(x.eq(x2.mul(a1))));
+            }
+            return new LinearSum(prod);
         }
     }
     
@@ -487,10 +497,10 @@ public class ComparisonConverter {
                 Expression x = Expression.create(v.getName());
                 Expression ex = ei.toExpression();
                 Expression eq;
-                if (! Converter.USE_EQ && cmp.equals("ge")) {
+                if (! Converter.USE_EQ && ! Converter.EQUIV_TRANSLATION && cmp.equals("ge")) {
                     eq = x.le(ex);
                     eq.setComment(v.getName() + " <= " + ex);
-                } else if (! Converter.USE_EQ && cmp.equals("le")) {
+                } else if (! Converter.USE_EQ && ! Converter.EQUIV_TRANSLATION && cmp.equals("le")) {
                     eq = x.ge(ex);
                     eq.setComment(v.getName() + " >= " + ex);
                 } else {
@@ -552,6 +562,8 @@ public class ComparisonConverter {
 
 
     private LinearSum reduceArity(LinearSum e, String cmp) throws SugarException {
+        LinearSum[] es = e.splitPbPart();
+        e = es[0];
         if (Converter.REDUCE_ARITY) {
             if (Converter.MAX_ARITY > 0) {
                 e = reduceLinearExpression(e, cmp);
@@ -559,9 +571,29 @@ public class ComparisonConverter {
                 e = simplifyLinearExpression(e, cmp, true);
             }
         }
+        if (es.length >= 2)
+            e.add(es[1]);
         return e;
     }
 
+    public LinearLiteral reduceArity(LinearLiteral lit) throws SugarException {
+        LinearSum e = lit.getLinearExpression();
+        String cmp = lit.getCmp();
+        e = reduceArity(e, cmp);
+        if (e == lit.getLinearExpression())
+            return lit;
+        if (cmp.equals("eq"))
+            return new LinearEqLiteral(e);
+        else if (cmp.equals("ne"))
+            return new LinearNeLiteral(e);
+        else if (cmp.equals("ge"))
+            return new LinearGeLiteral(e);
+        else if (cmp.equals("le"))
+            return new LinearLeLiteral(e);
+        else
+            throw new SugarException("Unknown cmp " + cmp);
+    }
+    
     /*
     protected List<Clause> convertLE(Expression x) throws SugarException {
         LinearSum e = convertFormula(x);

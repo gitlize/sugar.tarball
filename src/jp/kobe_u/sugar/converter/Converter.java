@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import jp.kobe_u.sugar.Logger;
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.SugarMain;
 import jp.kobe_u.sugar.csp.BooleanLiteral;
 import jp.kobe_u.sugar.csp.BooleanVariable;
 import jp.kobe_u.sugar.csp.CSP;
@@ -16,6 +17,7 @@ import jp.kobe_u.sugar.csp.HoldLiteral;
 import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.csp.LabelLiteral;
+import jp.kobe_u.sugar.csp.LinearLiteral;
 import jp.kobe_u.sugar.csp.LinearSum;
 import jp.kobe_u.sugar.csp.Literal;
 import jp.kobe_u.sugar.csp.RelationLiteral;
@@ -57,6 +59,7 @@ public class Converter {
     public static int MAX_ARITY = 0;
     public static int SPLITS = 2;
     public static boolean USE_EQ = false;
+    public static boolean EQUIV_TRANSLATION = false;
     public static boolean ESTIMATE_SATSIZE = false; // bad
     public static boolean ADD_GROUP_ID = false;
     public static boolean HOLD_CONSTRAINTS = false;
@@ -198,10 +201,22 @@ public class Converter {
                     BooleanLiteral v0 = new BooleanLiteral(v, false);
                     BooleanLiteral v1 = new BooleanLiteral(v, true);
                     clause.add(v0);
-                    for (Clause clause0 : clauses0) {
-                        clause0.add(v1);
+                    if (EQUIV_TRANSLATION) {
+                        for (Clause clause0 : clauses0) {
+                            for (Literal lit: clause0.getLiterals()) {
+                                Clause cl = new Clause(v0);
+                                cl.add(lit.neg());
+                                clauses.add(cl);
+                            }
+                            clause0.add(v1);
+                            clauses.add(clause0);
+                        }
+                    } else {
+                        for (Clause clause0 : clauses0) {
+                            clause0.add(v1);
+                        }
+                        clauses.addAll(clauses0);
                     }
-                    clauses.addAll(clauses0);
                 }
             }
         }
@@ -489,6 +504,8 @@ public class Converter {
     }
     
     public void convertExpression(Expression x) throws SugarException {
+        if (SugarMain.debug >= 2)
+            System.out.println("Converting " + x);
         if (x.isSequence(Expression.DOMAIN_DEFINITION)) {
             definitionConverter.convertDomainDefinition((Sequence)x);
         } else if (x.isSequence(Expression.INT_DEFINITION)) {
@@ -544,6 +561,30 @@ public class Converter {
             if (count % 1000 == 0) {
                 Logger.fine("converted " + count + " extra expressions, remaining " + extra.size());
             }
+        }
+    }
+    
+    public Clause reduce(Clause clause) throws SugarException {
+        Clause newClause = new Clause();
+        for (Literal lit : clause.getLiterals()) {
+            if (lit instanceof LinearLiteral) {
+                lit = comparisonConverter.reduceArity((LinearLiteral)lit);
+            }
+            newClause.add(lit);
+        }
+        return newClause;
+    }
+    
+    public void reduceAll() throws SugarException {
+        List<Clause> clauses = csp.getClauses();
+        csp.setClauses(new ArrayList<Clause>());
+        for (Clause clause : clauses) {
+            Clause newClause = reduce(clause);
+            csp.add(newClause);
+        }
+        while (extra.size() > 0) {
+            Expression x = extra.remove(0);
+            convertExpression(x);
         }
     }
     

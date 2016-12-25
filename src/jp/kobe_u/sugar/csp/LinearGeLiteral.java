@@ -6,6 +6,7 @@ import java.util.Set;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.encoder.Encoding;
 import jp.kobe_u.sugar.encoder.Problem;
 
 /**
@@ -21,8 +22,7 @@ public class LinearGeLiteral extends LinearLiteral {
      * @param linearSum the linear expression
      */
     public LinearGeLiteral(LinearSum linearSum) {
-        super(linearSum);
-        cmp = "ge";
+        super(linearSum, "ge");
     }
     
     @Override
@@ -47,7 +47,18 @@ public class LinearGeLiteral extends LinearLiteral {
 
     @Override
     public boolean isSimple() {
-        return linearSum.isSimple();
+        // return linearSum.isSimple();
+        if (! linearSum.isSimple())
+            return false;
+        if (linearSum.size() == 0)
+            return true;
+        Encoding encoding = linearSum.getCoef().firstKey().getEncoding();
+        switch (encoding) {
+        case ORDER:
+            return true;
+        default:
+            return false;
+        }
     }
     
     @Override
@@ -94,4 +105,11 @@ public class LinearGeLiteral extends LinearLiteral {
         return linearSum.getValue() == 0;
     }    
     
+    @Override
+    public Literal neg() throws SugarException {
+        // !(linearSum >= 0) --> linearSum+1 <= 0
+        LinearSum newLinearSum = new LinearSum(linearSum);
+        newLinearSum.add(LinearSum.ONE);
+        return new LinearLeLiteral(newLinearSum);
+    }
 }

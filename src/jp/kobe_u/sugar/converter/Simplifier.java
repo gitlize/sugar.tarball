@@ -63,10 +63,21 @@ public class Simplifier {
                         csp.add(p);
                         BooleanLiteral posLiteral = new BooleanLiteral(p, false);
                         BooleanLiteral negLiteral = new BooleanLiteral(p, true);
-                        Clause newClause = new Clause();
-                        newClause.add(negLiteral);
-                        newClause.add(literal);
-                        newClauses.add(newClause);
+                        if (Converter.EQUIV_TRANSLATION) {
+                            Clause newClause = new Clause();
+                            newClause.add(negLiteral);
+                            newClause.add(literal);
+                            newClauses.add(newClause);
+                            newClause = new Clause();
+                            newClause.add(posLiteral);
+                            newClause.add(literal.neg());
+                            newClauses.add(newClause);
+                        } else {
+                            Clause newClause = new Clause();
+                            newClause.add(negLiteral);
+                            newClause.add(literal);
+                            newClauses.add(newClause);
+                        }
                         clause.add(posLiteral);
                         if (USE_SIMPLIFYCACHE)
                             simplifyCache.put(literal, posLiteral);

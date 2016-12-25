@@ -195,7 +195,7 @@ public class OrderEncoder extends AbstractEncoder {
     
     private void encodeLinearLeLiteral(LinearLeLiteral lit, int[] clause) throws SugarException {
         if (lit.isValid()) {
-        } if (lit.isSimple()) {
+        } else if (lit.isSimple()) {
             clause = expand(clause, 1);
             clause[0] = getCode(lit);
             problem.addClause(clause);
@@ -208,6 +208,44 @@ public class OrderEncoder extends AbstractEncoder {
                 as[i] = linearSum.getA(vs[i]);
             clause = expand(clause, n);
             encodeLinearLe(as, vs, 0, linearSum.getB(), clause);
+        }
+    }
+
+    private void encodeLinearNe(int[] as, IntegerVariable[] vs, int i, int s, int[] clause) throws SugarException {
+        int i2 = i*2;
+        if (i >= vs.length - 1) {
+            // problem.addComment(as[i] + "*" + vs[i].getName() + " != " + (-s));
+            clause[i2] = getCodeLE(vs[i], as[i], -s-1);
+            clause[i2+1] = getCodeLE(vs[i], -as[i], s-1);
+            if (clause[i2] != Problem.TRUE_CODE && clause[i2+1] != Problem.TRUE_CODE)
+                problem.addClause(clause);
+        } else {
+            int a = as[i];
+            IntegerDomain domain = vs[i].getDomain();
+            Iterator<Integer> iter = domain.values(); 
+            while (iter.hasNext()) {
+                int c = iter.next();
+                // vs[i]=c -> ...
+                // encoder.writeComment(vs[i].getName() + " = " + c);
+                clause[i2] = getCodeLE(vs[i], 1, c-1);
+                clause[i2+1] = getCodeLE(vs[i], -1, -c-1);
+                if (clause[i2] != Problem.TRUE_CODE && clause[i2+1] != Problem.TRUE_CODE)
+                    encodeLinearNe(as, vs, i+1, s+a*c, clause);
+            }
+        }
+    }
+    
+    private void encodeLinearNeLiteral(LinearNeLiteral lit, int[] clause) throws SugarException {
+        if (lit.isValid()) {
+        } else {
+            LinearSum linearSum = lit.getLinearExpression(); 
+            int n = linearSum.size();
+            IntegerVariable[] vs = linearSum.getVariablesSorted();
+            int[] as = new int[n];
+            for (int i = 0; i < n; i++)
+                as[i] = linearSum.getA(vs[i]);
+            clause = expand(clause, 2*n);
+            encodeLinearNe(as, vs, 0, linearSum.getB(), clause);
         }
     }
 
@@ -233,18 +271,21 @@ public class OrderEncoder extends AbstractEncoder {
             clause0 = expand(clause0, 1);
             clause0[0] = ((BooleanLiteral)lit).getCode();
             problem.addClause(clause0);
+        } else if (lit instanceof RelationLiteral) {
+            encodeRelationLiteral((RelationLiteral)lit, clause0);
         } else if (lit instanceof LinearLeLiteral) {
             encodeLinearLeLiteral((LinearLeLiteral)lit, clause0);
         } else if (lit instanceof LinearGeLiteral) {
             LinearSum e = new LinearSum(0);
             e.subtract(((LinearGeLiteral)lit).getLinearExpression());
             encodeLinearLeLiteral(new LinearLeLiteral(e), clause0);
-        } else if (lit instanceof RelationLiteral) {
-            encodeRelationLiteral((RelationLiteral)lit, clause0);
         } else if (lit instanceof LinearEqLiteral) {
-            throw new SugarException("Cannot encode " + lit.toString());
+            LinearLeLiteral lit1 = new LinearLeLiteral(((LinearEqLiteral) lit).getLinearExpression());
+            encodeLiteral(lit1, clause0);
+            LinearGeLiteral lit2 = new LinearGeLiteral(((LinearEqLiteral) lit).getLinearExpression());
+            encodeLiteral(lit2, clause0);
         } else if (lit instanceof LinearNeLiteral) {
-            throw new SugarException("Cannot encode " + lit.toString());
+            encodeLinearNeLiteral((LinearNeLiteral)lit, clause0);
         } else if (lit instanceof ProductLiteral) {
             throw new SugarException("Cannot encode " + lit.toString());
         } else if (lit instanceof PowerLiteral) {
@@ -258,17 +299,17 @@ public class OrderEncoder extends AbstractEncoder {
     
     @Override
     public void encodeClause(Clause c) throws SugarException {
+        if (c.isValid())
+            return;
         if (! c.isSimple())
             throw new SugarException("Cannot encode non-simple clause "
                     + c.toString());
         problem.addComment(c.toString());
-        if (c.isValid())
-            return;
         try {
             int[] clause = new int[c.simpleSize()];
             List<Integer> groups = new ArrayList<Integer>();
             int weight = 1;
-            Literal lit = null;
+            Literal complexLit = null;
             int i = 0;
             for (Literal literal : c.getLiterals()) {
                 if (literal.isSimple()) {
@@ -290,14 +331,14 @@ public class OrderEncoder extends AbstractEncoder {
                         return;
                     clause[i++] = code;
                 } else {
-                    lit = literal;
+                    complexLit = literal;
                 }
             }
             problem.beginGroups(groups, weight);
-            if (lit == null) {
+            if (complexLit == null) {
                 problem.addClause(clause);
             } else {
-                encodeLiteral(lit, clause);
+                encodeLiteral(complexLit, clause);
             }
             problem.endGroups();
         } catch (SugarException e) {

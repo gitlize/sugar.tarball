@@ -55,6 +55,11 @@ public class ProductLiteral extends Literal {
     }
 
     @Override
+    public Literal neg() throws SugarException {
+        throw new SugarException("Negation of ProductLiteral " + this);
+    }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;

@@ -63,13 +63,18 @@ public class BooleanLiteral extends Literal {
     public int propagate() {
         return 0;
     }
-
+    
     /* (non-Javadoc)
      * @see Literal#isSatisfied()
      */
     @Override
     public boolean isSatisfied() {
         return v.getValue() ^ negative;
+    }
+
+    @Override
+    public Literal neg() throws SugarException {
+        return new BooleanLiteral(v, ! negative);
     }
     
     @Override

@@ -33,6 +33,8 @@ public abstract class Literal {
     public abstract boolean isUnsatisfiable() throws SugarException;
 
     public abstract int propagate() throws SugarException;
+    
+    public abstract Literal neg() throws SugarException;
 
     public int getCode() throws SugarException {
         throw new SugarException("Internal error " + toString()); 
