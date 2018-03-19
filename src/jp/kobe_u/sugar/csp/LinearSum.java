@@ -22,6 +22,7 @@ import jp.kobe_u.sugar.expression.Expression;
  * @author Naoyuki Tamura
  */
 public class LinearSum {
+    public static LinearSum ZERO = new LinearSum(0);
     public static LinearSum ONE = new LinearSum(1);
     
     private int b;
@@ -168,10 +169,15 @@ public class LinearSum {
      * @param c the constant to be multiplied by
      */
     public void multiply(int c) {
-        b *= c;
-        for (IntegerVariable v : coef.keySet()) {
-            int a = c * getA(v);
-            setA(a, v);
+        if (c == 0) {
+            b = 0;
+            coef = new TreeMap<IntegerVariable,Integer>();
+        } else {
+            b *= c;
+            for (IntegerVariable v : coef.keySet()) {
+                int a = c * getA(v);
+                setA(a, v);
+            }
         }
         domain = null;
     }

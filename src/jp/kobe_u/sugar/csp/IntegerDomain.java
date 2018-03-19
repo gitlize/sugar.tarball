@@ -17,14 +17,14 @@ public abstract class IntegerDomain {
         if (USE_DIET_DOMAIN)
             return new IntegerDomainDiet(lb, ub);
         else
-            return new IntegerDomainIntevals(lb, ub);
+            return new IntegerDomainIntervals(lb, ub);
     }
 
     public static IntegerDomain create(SortedSet<Integer> domain) {
         if (USE_DIET_DOMAIN)
             return new IntegerDomainDiet(domain);
         else
-            return new IntegerDomainIntevals(domain);
+            return new IntegerDomainIntervals(domain);
     }
 
     public boolean isEmpty() {

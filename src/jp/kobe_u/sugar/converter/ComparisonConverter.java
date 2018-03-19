@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.SugarMain;
 import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.Clause;
 import jp.kobe_u.sugar.csp.IntegerDomain;

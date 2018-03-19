@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 import jp.kobe_u.sugar.SugarConstants;
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.SugarMain;
 
 /**
  * This class implements a clause in CSP.
@@ -186,10 +187,13 @@ public class Clause {
             }
             if (bound != null) {
                 // System.out.println("Bound " + v.getName() + " " + bound[0] + " " + bound[1]);
-                int lb = Math.max(v.getDomain().getLowerBound(), bound[0]);
-                int ub = Math.min(v.getDomain().getUpperBound(), bound[1]); 
-                if (lb <= ub)
+                int lb0 = v.getDomain().getLowerBound();
+                int ub0 = v.getDomain().getUpperBound();
+                int lb = Math.max(lb0, bound[0]);
+                int ub = Math.min(ub0, bound[1]); 
+                if (lb <= ub) {
                     count += v.bound(bound[0], bound[1]);
+                }
             }
         }
         return count;

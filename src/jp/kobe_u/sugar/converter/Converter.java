@@ -132,6 +132,9 @@ public class Converter {
     
     protected void addEquivalence(IntegerVariable v, Expression x) {
         equivMap.put(x, v);
+        if (SugarMain.debug >= 2) {
+            System.out.println("Equivalence " + v + " = " + x);
+        }
     }
 
     public void syntaxError(String s) throws SugarException {

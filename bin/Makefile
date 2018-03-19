@@ -1,5 +1,5 @@
-VER = v2-3-2
-VERSION = 2.3.2
+VER = v2-3-3
+VERSION = 2.3.3
 
 APP0 = sugar
 BINDIR = /usr/local/bin

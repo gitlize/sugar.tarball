@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import jp.kobe_u.sugar.SugarException;
+import jp.kobe_u.sugar.SugarMain;
 import jp.kobe_u.sugar.encoder.Encoding;
 
 /**

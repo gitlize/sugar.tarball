@@ -21,7 +21,7 @@ import jp.kobe_u.sugar.csp.CSP;
 import jp.kobe_u.sugar.csp.CSP.Objective;
 import jp.kobe_u.sugar.csp.IntegerDomain;
 import jp.kobe_u.sugar.csp.IntegerDomainDiet;
-import jp.kobe_u.sugar.csp.IntegerDomainIntevals;
+import jp.kobe_u.sugar.csp.IntegerDomainIntervals;
 import jp.kobe_u.sugar.csp.IntegerVariable;
 import jp.kobe_u.sugar.encoder.Encoder;
 import jp.kobe_u.sugar.encoder.Encoding;
@@ -760,7 +760,7 @@ public class SugarMain {
             IntegerDomain.USE_DIET_DOMAIN = ! opt.startsWith("no_");
         } else if (opt.matches("domain=(\\d+)")) {
             int size = Integer.parseInt(s[1]);
-            IntegerDomainIntevals.MAX_SET_SIZE = size;
+            IntegerDomainIntervals.MAX_SET_SIZE = size;
             IntegerDomainDiet.MAX_SET_SIZE = size;
         } else if (opt.startsWith("pb_")) {
             pb = true;
